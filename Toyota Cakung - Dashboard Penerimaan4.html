@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Toyota Cakung - Professional Dashboard</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHLuzqXq_T6BGACGbDdheC7w8ZEQcsqCM",
+            authDomain: "penerimaan-service.firebaseapp.com",
+            databaseURL: "https://penerimaan-service-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "penerimaan-service",
+            storageBucket: "penerimaan-service.firebasestorage.app",
+            messagingSenderId: "238520546109",
+            appId: "1:238520546109:web:1e1b6c31288fd431290b54"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        window.db = db; window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbUpdate = update; window.dbRemove = remove;
+    </script>
+
+    <style>
+        :root { --primary: #4361ee; --warning: #f59e0b; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
+        body { margin: 0; background: var(--bg); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
+        
+        /* Layout Pembungkus */
+        #page-dashboard, #page-estimasi { width: 100%; height: 100vh; padding: 15px; box-sizing: border-box; overflow-y: auto; }
+        
+        header {
+            background: linear-gradient(90deg, #1e293b, #334155);
+            padding: 12px 20px; border-radius: 12px; color: white;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .actions { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        button { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-estimasi { background: #764ba2; color: white; } /* Warna ungu agar beda */
+        .btn-date { background: white; color: #334155; border: 1px solid #cbd5e1; }
+        .btn-download { background: #10b981; color: white; }
+        
+        .row-DONE { background-color: #dcfce7 !important; }
+        .row-LATE { background-color: #fee2e2 !important; }
+        .row-TINGGAL { background-color: #e0f2fe !important; }
+        .row-normal { background-color: white; }
+
+        .sep-menginap { background: #fee2e2 !important; color: #b91c1c !important; border-left: 6px solid #ef4444 !important; font-weight: bold; padding: 10px !important; }
+        .sep-today { background: #e2e8f0 !important; color: #475569 !important; border-left: 6px solid #64748b !important; font-weight: bold; padding: 10px !important; }
+
+        .table-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; min-width: 1200px; border-collapse: collapse; }
+        th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 11px; color: #64748b; text-transform: uppercase; }
+        td { padding: 6px; border-bottom: 1px solid #f1f5f9; }
+        input, select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: transparent; }
+        .input-nama { font-weight: bold; text-transform: uppercase; }
+        .wa-btn { background: #22c55e; color: white; border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: bold; }
+        .del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 18px; }
+        .download-box { background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; display: flex; gap: 10px; align-items: center; }
+
+        /* Style khusus Jendela Estimasi */
+        #iframe-container { width: 100%; height: calc(100vh - 100px); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+<div id="page-dashboard">
+    <header>
+        <h2 style="margin:0; font-size: 18px;">🛠️ Daya Toyota Cakung Service</h2>
+        <div id="display-date" style="font-weight: bold; font-size: 14px;">📅 --.--.----</div>
+    </header>
+
+    <div class="actions">
+        <button class="btn-estimasi" onclick="showPage('estimasi')">📊 BUKA ESTIMASI</button>
+        <button class="btn-add" onclick="addNewRow()">+ TAMBAH DATA</button>
+        <div style="flex-grow: 1"></div>
+        <div class="download-box">
+            <span style="font-size:11px; font-weight:bold">REKAP:</span>
+            <input type="date" id="startDl" style="width:130px">
+            <input type="date" id="endDl" style="width:130px">
+            <button class="btn-download" onclick="downloadData()">DOWNLOAD EXCEL</button>
+        </div>
+        <input type="date" id="filterDate" style="width:130px; background:white">
+        <button class="btn-date" onclick="setMode('date')">CARI</button>
+        <button class="btn-date" onclick="setMode('today')">HARI INI</button>
+    </div>
+
+    <div class="table-card">
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center">No</th>
+                        <th style="width:115px">No Polisi</th>
+                        <th>Nama Customer</th>
+                        <th style="width:125px">No Telepon</th>
+                        <th>Tipe Mobil</th>
+                        <th style="width:100px">Janji Jam</th>
+                        <th style="width:110px">Selesai</th>
+                        <th style="width:115px">Penyerahan</th>
+                        <th style="width:130px">Konfirmasi</th>
+                        <th style="width:105px">Status</th>
+                        <th style="width:100px; text-align:center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="mainTable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="page-estimasi" style="display: none;">
+    <header>
+        <h2 style="margin:0; font-size: 18px;">📊 Menu Estimasi Servis</h2>
+        <button class="btn-date" onclick="showPage('dashboard')">⬅️ KEMBALI KE PENERIMAAN</button>
+    </header>
+    
+    <div id="iframe-container">
+        <iframe src="ESTIMASI SIAP PAKAI 2025.HTML"></iframe>
+    </div>
+</div>
+
+<script>
+    // --- FUNGSI PINDAH HALAMAN ---
+    function showPage(page) {
+        if(page === 'estimasi') {
+            document.getElementById('page-dashboard').style.display = 'none';
+            document.getElementById('page-estimasi').style.display = 'block';
+        } else {
+            document.getElementById('page-dashboard').style.display = 'block';
+            document.getElementById('page-estimasi').style.display = 'none';
+        }
+    }
+
+    // --- LOGIKA DASHBOARD ASLI ---
+    const d = new Date();
+    const TODAY_STR = d.toISOString().split('T')[0];
+    const TODAY_DISPLAY = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    document.getElementById('display-date').innerText = '📅 ' + TODAY_DISPLAY;
+    
+    let mode = 'today';
+    let selectedDate = null;
+    let allData = {};
+
+    window.onload = () => {
+        const dataRef = window.dbRef(window.db, 'services');
+        window.dbOnValue(dataRef, (snapshot) => {
+            allData = snapshot.val() || {};
+            render();
+        });
+        setInterval(render, 30000);
+    };
+
+    function addNewRow() {
+        const id = Date.now().toString();
+        window.dbSet(window.dbRef(window.db, 'services/' + id), {
+            id: id, tanggalMasuk: TODAY_STR, tanggalDiserahkan: "",
+            nopol: "", nama: "", tel: "", tipe: "",
+            janji: "", selesai: "", diserahkan: "", konfirmasi: "", status: "TUNGGU"
+        });
+    }
+
+    function updateData(id, field, value) {
+        const updates = {};
+        updates[field] = value;
+        if (field === 'diserahkan') {
+            if (['DISERAHKAN', 'SECURITY', 'TM'].includes(value)) {
+                updates['tanggalDiserahkan'] = TODAY_STR;
+            } else if (value === '') {
+                updates['tanggalDiserahkan'] = "";
+            }
+        }
+        window.dbUpdate(window.dbRef(window.db, 'services/' + id), updates);
+    }
+
+    function deleteData(id) {
+        if(confirm('Hapus data ini?')) window.dbRemove(window.dbRef(window.db, 'services/' + id));
+    }
+
+    function handlePaste(e, id) {
+        e.preventDefault();
+        const raw = e.clipboardData.getData('text').trim();
+        let parts = raw.split('\t');
+        if (parts.length < 2) parts = raw.split(/  +/);
+        window.dbUpdate(window.dbRef(window.db, 'services/' + id), {
+            nopol: (parts[0] || "").trim(),
+            nama: (parts[1] || "").trim(),
+            tel: (parts[2] || "").trim(),
+            tipe: (parts[3] || "").trim()
+        });
+    }
+
+    function getTimeOptions(selected) {
+        let html = '<option value="">- Jam -</option>';
+        for(let h=7; h<=17; h++) {
+            for(let m=0; m<60; m+=15) {
+                let time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                html += `<option value="${time}" ${selected === time ? 'selected' : ''}>${time}</option>`;
+            }
+        }
+        return html;
+    }
+
+    function render() {
+        const tbody = document.getElementById('mainTable');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        let items = Object.values(allData);
+
+        let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
+        let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
+
+        if (mode === 'today') {
+            if (menginap.length > 0) {
+                menginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
+                let lastDate = "";
+                menginap.forEach((x, i) => {
+                    if (x.tanggalMasuk !== lastDate) {
+                        addSeparator(tbody, `📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}`, "sep-menginap");
+                        lastDate = x.tanggalMasuk;
+                    }
+                    addRow(tbody, x, i + 1);
+                });
+            }
+            addSeparator(tbody, "🚗 PENERIMAAN HARI INI", "sep-today");
+            hariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+        } else {
+            let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
+            addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
+            histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+        }
+    }
+
+    function addSeparator(tbody, text, customClass) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="11" class="group-separator ${customClass}">${text}</td>`;
+        tbody.appendChild(tr);
+    }
+
+    function addRow(tbody, x, no) {
+        const tr = document.createElement('tr');
+        let rowColorClass = 'row-normal';
+        const sekarang = new Date();
+        const jamSekarang = `${String(sekarang.getHours()).padStart(2,'0')}:${String(sekarang.getMinutes()).padStart(2,'0')}`;
+
+        if (x.selesai === 'SELESAI' && ['DISERAHKAN', 'SECURITY'].includes(x.diserahkan)) {
+            rowColorClass = 'row-DONE';
+        } else if (x.tanggalMasuk === TODAY_STR && x.janji && x.janji < jamSekarang && x.selesai !== 'SELESAI') {
+            rowColorClass = 'row-LATE';
+        } else if (x.status === 'TINGGAL') {
+            rowColorClass = 'row-TINGGAL';
+        }
+
+        tr.className = rowColorClass;
+        tr.innerHTML = `
+            <td style="text-align:center; color:#94a3b8; font-weight:bold">${no}</td>
+            <td><input value="${x.nopol}" placeholder="Nopol" onpaste="handlePaste(event,'${x.id}')" oninput="updateData('${x.id}','nopol',this.value)"></td>
+            <td><input class="input-nama" value="${x.nama}" placeholder="Nama" oninput="updateData('${x.id}','nama',this.value)"></td>
+            <td><input value="${x.tel}" placeholder="08..." oninput="updateData('${x.id}','tel',this.value)"></td>
+            <td><input value="${x.tipe}" placeholder="Tipe" oninput="updateData('${x.id}','tipe',this.value)"></td>
+            <td><select onchange="updateData('${x.id}','janji',this.value)">${getTimeOptions(x.janji)}</select></td>
+            <td><select onchange="updateData('${x.id}','selesai',this.value)">
+                <option value="" ${x.selesai===''?'selected':''}>-</option>
+                <option value="SELESAI" ${x.selesai==='SELESAI'?'selected':''}>SELESAI</option>
+            </select></td>
+            <td><select onchange="updateData('${x.id}','diserahkan',this.value)">
+                <option value="" ${x.diserahkan===''?'selected':''}>-</option>
+                <option ${x.diserahkan==='DISERAHKAN'?'selected':''}>DISERAHKAN</option>
+                <option ${x.diserahkan==='SECURITY'?'selected':''}>SECURITY</option>
+                <option ${x.diserahkan==='TM'?'selected':''}>TM</option>
+            </select></td>
+            <td><select onchange="updateData('${x.id}','konfirmasi',this.value)">
+                <option value="" ${x.konfirmasi===''?'selected':''}>-</option>
+                <option ${x.konfirmasi==='WA OK'?'selected':''}>WA OK</option>
+                <option ${x.konfirmasi==='WA CALL OK'?'selected':''}>WA CALL OK</option>
+                <option ${x.konfirmasi==='KONFIMASI OK'?'selected':''}>KONFIMASI OK</option>
+            </select></td>
+            <td><select onchange="updateData('${x.id}','status',this.value)" style="font-weight:bold;">
+                <option value="TUNGGU" ${x.status==='TUNGGU'?'selected':''}>TUNGGU</option>
+                <option value="TINGGAL" ${x.status==='TINGGAL'?'selected':''}>TINGGAL</option>
+            </select></td>
+            <td style="text-align:center">
+                <button class="wa-btn" onclick="sendWA('${x.id}')">WA</button>
+                <button class="del-btn" onclick="deleteData('${x.id}')">×</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function downloadData() {
+        const start = document.getElementById('startDl').value;
+        const end = document.getElementById('endDl').value;
+        if(!start || !end) return alert('Pilih rentang tanggal download');
+        let csv = "Tanggal Masuk;No Polisi;Nama Customer;No Telepon;Tipe Mobil;Jam Janji;Status Selesai;Penyerahan;Konfirmasi;Status\n";
+        Object.values(allData).forEach(x => {
+            if(x.tanggalMasuk >= start && x.tanggalMasuk <= end) {
+                const clean = (val) => val ? val.toString().replace(/;/g, ',') : '-';
+                csv += `${clean(x.tanggalMasuk)};${clean(x.nopol)};${clean(x.nama)};${clean(x.tel)};${clean(x.tipe)};${clean(x.janji)};${clean(x.selesai)};${clean(x.diserahkan)};${clean(x.konfirmasi)};${clean(x.status)}\n`;
+            }
+        });
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `Rekap_Service_${start}_sd_${end}.csv`);
+        a.click();
+    }
+
+    function sendWA(id) {
+        const d = allData[id];
+        if(!d.tel) return alert('No HP kosong');
+        const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
+        const namaBold = d.nama.toUpperCase();
+        const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih 🙏🏻`;
+        window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    function setMode(m) {
+        mode = m; 
+        selectedDate = document.getElementById('filterDate').value; 
+        render();
+    }
+</script>
+
+</body>
+</html>

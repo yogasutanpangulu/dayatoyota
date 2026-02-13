@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="id">
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBHLuzqXq_T6BGACGbDdheC7w8ZEQcsqCM",
+        authDomain: "penerimaan-service.firebaseapp.com",
+        databaseURL: "https://penerimaan-service-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "penerimaan-service",
+        storageBucket: "penerimaan-service.firebasestorage.app",
+        messagingSenderId: "238520546109",
+        appId: "1:238520546109:web:1e1b6c31288fd431290b54"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    // Ekspos ke window agar bisa dipakai fungsi lama
+    window.db = db;
+    window.dbRef = ref;
+    window.dbSet = set;
+    window.dbOnValue = onValue;
+</script>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Estimasi Servis - Daya Toyota Cakung</title>
+    <meta name="description" content="Aplikasi estimasi servis kendaraan profesional dengan database lengkap suku cadang dan jasa servis untuk bengkel otomotif Indonesia" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333; /* Default text color */
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-gradient {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .service-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .parts-gradient {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .database-service-gradient {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .database-parts-gradient {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .total-gradient {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .grand-total-gradient {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border: 3px solid;
+            border-image: linear-gradient(135deg, #667eea, #764ba2) 1;
+        }
+        
+        .highlight {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            transition: all 0.5s ease;
+            transform: scale(1.02);
+        }
+        
+        .btn-animated {
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+        
+        .btn-animated:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        /* Adjusted padding and font size for "Pilih" buttons */
+        .btn-info, .btn-select { /* Combined for both service and part database buttons */
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px; /* Reduced padding */
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 11px; /* Slightly reduced font size */
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .btn-copy {
+            background: linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%); /* Greenish color for copy */
+            color: white;
+            border: none;
+            padding: 4px 8px; /* Smaller padding */
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 10px; /* Smaller font size */
+            margin-right: 5px; /* Space from text */
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        /* Adjusted padding for input fields */
+        .input-field {
+            width: 100%;
+            padding: 8px 12px; /* Reduced padding */
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+            color: #333;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .card {
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+        }
+        
+        .card-content {
+            padding: 30px;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Adjusted padding and font size for table headers */
+        .table th {
+            padding: 10px 15px; /* Reduced padding */
+            text-align: left;
+            font-weight: 700;
+            color: white;
+            font-size: 13px; /* Slightly reduced font size */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Adjusted padding and font size for table data cells */
+        .table td {
+            padding: 10px 15px; /* Reduced padding */
+            border-bottom: 1px solid #f1f5f9;
+            background: white;
+            font-size: 13px; /* Slightly reduced font size */
+            color: #333;
+        }
+        
+        .table tbody tr:hover td {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            transform: scale(1.01);
+            transition: all 0.2s ease;
+        }
+        
+        .service-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .parts-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .database-service-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .database-parts-header {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .manage-data-header {
+            background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+        }
+        
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .scroll-to-top:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+        
+        .icon-container {
+            padding: 12px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Adjusted padding and font size for price tags */
+        .price-tag {
+            background: linear-gradient(135deg, #fee140 0%, #fa709a 100%);
+            color: white;
+            padding: 6px 12px; /* Reduced padding */
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px; /* Slightly reduced font size */
+        }
+        
+        .total-card {
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            padding-left: 50px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            z-index: 10;
+        }
+        
+        .animated-bg {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .toast-error {
+            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        /* New styles for grouping */
+        .group-header {
+            background-color: #f0f0f0; /* Light grey background for group headers */
+            font-weight: bold;
+            text-align: left;
+            padding: 8px 15px; /* Reduced padding for group headers */
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+            font-size: 14px; /* Adjusted font size for group headers */
+        }
+        .group-header th {
+            background-color: #f0f0f0 !important; /* Override table header styles */
+            color: #333 !important;
+            padding: 8px 15px !important; /* Ensure padding is consistent */
+            font-size: 14px !important; /* Ensure font size is consistent */
+        }
+
+        .code-display-container {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border: 3px solid;
+            border-image: linear-gradient(135deg, #667eea, #764ba2) 1;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .code-display {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            color: #333;
+            word-break: break-all;
+            white-space: normal;
+            margin-top: 10px;
+            min-height: 40px; /* Ensure it's visible even if empty */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Custom width for QTY input */
+        .qty-input {
+            width: 60px; /* Adjust as needed */
+            text-align: center;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            .print-header, .print-footer {
+                display: block !important;
+            }
+            
+            body {
+                font-size: 12pt; /* Slightly reduced for better fit */
+                background: white !important;
+                color: black !important;
+                margin: 0;
+                padding: 15px; /* Added padding for margins */
+            }
+            
+            main {
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .card, .card-gradient {
+                box-shadow: none !important;
+                border: 2px solid #333 !important; /* Thinned from 3px */
+                background: white !important;
+                margin-bottom: 20px !important; /* Reduced margin */
+                page-break-inside: avoid;
+            }
+            
+            .card-header {
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+                border-bottom: 1px solid #666 !important; /* Thinned from 2px and lightened */
+                color: #000 !important;
+            }
+            
+            .card-header h2 {
+                color: #000 !important;
+                font-size: 16pt !important; /* Reduced font size */
+                font-weight: bold !important;
+            }
+            
+            .card-header p {
+                color: #666 !important;
+            }
+            
+            .table {
+                border: 1px solid #333 !important; /* Thinned from 2px */
+            }
+            
+            .table th {
+                background: #f8f9fa !important;
+                color: #000 !important;
+                border: 1px solid #ccc !important; /* Lightened internal lines */
+                font-size: 11pt !important; /* Reduced font size */
+                font-weight: bold !important;
+                text-align: left !important;
+            }
+            
+            .table td {
+                border: 1px solid #ccc !important; /* Lightened internal lines */
+                background: white !important;
+                color: #000 !important;
+                font-size: 10pt !important; /* Reduced font size */
+                text-align: left !important;
+            }
+            
+            .table tbody tr:nth-child(even) td {
+                background: #f8f9fa !important;
+            }
+            
+            .price-tag {
+                background: #e9ecef !important;
+                color: #000 !important;
+                border: 1px solid #666 !important; /* Thinned border */
+                font-weight: bold !important;
+            }
+            
+            .total-card {
+                background: #f8f9fa !important;
+                border: 1px solid #666 !important; /* Thinned border */
+                color: #000 !important;
+                margin: 10px 0 !important;
+            }
+            
+            .print-header {
+                text-align: center;
+                margin-bottom: 25px;
+                border-bottom: 2px solid #333; /* Thinned from 3px */
+                padding-bottom: 15px;
+            }
+            
+            .print-header h1 {
+                font-size: 20pt; /* Reduced font size */
+                font-weight: bold;
+                margin: 0;
+                color: #000;
+            }
+            
+            .print-header p {
+                font-size: 11pt; /* Reduced font size */
+                margin: 5px 0;
+                color: #666;
+            }
+            
+            .print-footer {
+                margin-top: 25px;
+                padding-top: 15px;
+                border-top: 1px solid #333; /* Thinned border */
+                text-align: center;
+                font-size: 9pt; /* Reduced font size */
+                color: #666;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .card-content {
+                padding: 20px;
+            }
+            
+            .table {
+                font-size: 12px;
+            }
+            
+            .table th, .table td {
+                padding: 8px 6px; /* Further reduced for small screens */
+            }
+            
+            .btn-primary, .btn-success, .btn-warning, .btn-secondary {
+                padding: 8px 12px; /* Reduced for small screens */
+                font-size: 11px;
+            }
+            .btn-info, .btn-select, .btn-edit { /* For "Pilih" and "Edit" buttons on small screens */
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+            .input-field {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .price-tag {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+            .group-header {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .group-header th {
+                padding: 6px 10px !important;
+                font-size: 12px !important;
+            }
+            .qty-input {
+                width: 45px; /* Adjust for smaller screens */
+            }
+        }
+    </style>
+</head>
+<body class="animated-bg">
+    <!-- Header -->
+    <header class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg border-b border-white border-opacity-20 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="icon-container service-gradient">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white drop-shadow-lg">Estimasi Servis Kendaraan</h1>
+                        <p class="text-white text-opacity-90 text-sm font-medium">Sistem Manajemen Bengkel Profesional</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleManageDataSection()" class="btn-primary btn-animated">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"></path>
+                        </svg>
+                        Kelola Data
+                    </button>
+                    <button onclick="handlePrint()" class="btn-success btn-animated">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"></path>
+                        </svg>
+                        <span class="hidden sm:inline">Cetak</span>
+                    </button>
+                    <button onclick="handleDownload()" class="btn-warning btn-animated">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path>
+                        </svg>
+                        <span class="hidden sm:inline">Download</span>
+                    </button>
+<button onclick="saveEstimasiKeDatabase()" class="btn-primary btn-animated">
+    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+    </svg>
+    Simpan Estimasi
+</button>
+                    <button onclick="handleReset()" class="btn-secondary btn-animated">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span class="hidden sm:inline">Reset</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Print Only Header -->
+    <div class="print-header" style="display: none;">
+        <h1 style="font-size: 24pt; font-weight: bold; margin: 0; color: #000;" id="printShopName">NAMA BENGKEL ANDA</h1>
+        <p style="font-size: 12pt; margin: 5px 0; color: #666;" id="printShopAddress">Alamat Lengkap Bengkel Anda</p>
+        <p style="font-size: 12pt; margin: 5px 0; color: #666;" id="printShopPhone">Telepon: (021) 12345678</p>
+        <p style="font-size: 12pt; margin: 5px 0; color: #666;">Tanggal: <span id="printDate"></span></p>
+    </div>
+
+    <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <!-- Service Estimation Section -->
+        <div class="card card-gradient" id="estimationSection">
+            <div class="card-header service-gradient">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="icon-container bg-white bg-opacity-20">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Jasa Servis</h2>
+                            <p class="text-white text-opacity-90 text-sm font-medium">Pilih jasa servis yang diperlukan</p>
+                        </div>
+                    </div>
+                    <button onclick="addManualService()" class="btn-primary btn-animated no-print">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Tambah Manual
+                    </button>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="overflow-x-auto">
+                    <table class="table" id="serviceTable">
+                        <thead>
+                            <tr>
+                                <th class="service-header">Nama Jasa</th>
+                                <th class="service-header">Harga</th>
+                                <th class="service-header">QTY</th>
+                                <th class="service-header">Diskon (%)</th>
+                                <th class="service-header">Total</th>
+                                <th class="service-header no-print">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serviceTableBody">
+                            <!-- Service rows will be added here -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-right font-bold text-gray-800">Total Potongan Diskon Jasa:</td>
+                                <td colspan="2" class="font-bold text-gray-800"><span class="price-tag" id="totalDiscountService">Rp 0</span></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="mt-8 flex justify-end">
+                    <div class="total-card total-gradient">
+                        <span class="text-lg font-bold text-white">Total Jasa</span>
+                        <div class="text-3xl font-black text-white mt-2" id="totalJasa">Rp 0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parts Estimation Section -->
+        <div class="card card-gradient" id="partsEstimationSection">
+            <div class="card-header parts-gradient">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="icon-container bg-white bg-opacity-20">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Part / Bahan</h2>
+                            <p class="text-white text-opacity-90 text-sm font-medium">Pilih part dan bahan yang diperlukan</p>
+                        </div>
+                    </div>
+                    <button onclick="addManualPart()" class="btn-primary btn-animated no-print">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Tambah Manual
+                    </button>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="overflow-x-auto">
+                    <table class="table" id="partTable">
+                        <thead>
+                            <tr>
+                                <th class="parts-header">Nama Part / Bahan</th>
+                                <th class="parts-header">Harga</th>
+                                <th class="parts-header">QTY</th>
+                                <th class="parts-header">Diskon (%)</th>
+                                <th class="parts-header">Total</th>
+                                <th class="parts-header no-print">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partTableBody">
+                            <!-- Part rows will be added here -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-right font-bold text-gray-800">Total Potongan Diskon Part:</td>
+                                <td colspan="2" class="font-bold text-gray-800"><span class="price-tag" id="totalDiscountPart">Rp 0</span></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="mt-8 space-y-4">
+                    <div class="flex justify-end">
+    <div class="total-card parts-gradient">
+        <span class="text-lg font-bold text-white uppercase tracking-wide">Total Part</span>
+        <div class="text-3xl font-black text-white mt-2" id="totalPart">Rp 0</div>
+    </div>
+</div>
+
+<div class="flex justify-end">
+    <div class="total-card grand-total-gradient pulse-animation w-full md:w-auto">
+        <div class="flex flex-col md:flex-row justify-around items-center space-y-4 md:space-y-0 md:space-x-12 px-2">
+            <div class="text-center md:text-left">
+                <span class="text-xl font-bold text-gray-800 uppercase tracking-wide">Total Discount All</span>
+                <div class="text-3xl font-black text-red-600 mt-2" id="totalDiscountAll">Rp 0</div>
+            </div>
+            
+            <div class="hidden md:block h-16 w-0.5 bg-gray-400 opacity-30"></div>
+            
+            <div class="text-center md:text-right">
+                <span class="text-2xl font-bold text-gray-800 uppercase tracking-wide">Grand Total</span>
+                <div class="text-4xl font-black text-gray-800 mt-3" id="grandTotal">Rp 0</div>
+            </div>
+        </div>
+
+        <button onclick="copyGrandTotal()" class="btn-primary btn-animated mt-8 no-print w-full md:w-auto">
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1.5M9 3l2-2 2 2M9 3h6M9 3v1.5M15 3v1.5M15 5H9m6 0h2a2 2 0 012 2v2.5M15 5v2.5"></path>
+            </svg>
+            Salin Grand Total
+        </button>
+    </div>
+</div>
+                    <!-- Part Codes Display -->
+                    <div class="flex justify-end no-print">
+                        <div class="code-display-container">
+                            <span class="text-lg font-bold text-gray-800">Kode Part Terpilih</span>
+                            <div id="partCodesDisplay" class="code-display"></div>
+                            <button onclick="copyPartCodes()" class="btn-primary btn-animated mt-4">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1.5M9 3l2-2 2 2M9 3h6M9 3v1.5M15 3v1.5M15 5H9m6 0h2a2 2 0 012 2v2.5M15 5v2.5"></path>
+                                </svg>
+                                Salin Kode
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Database Section -->
+        <div class="card card-gradient no-print" id="serviceDatabaseSection">
+            <div class="card-header database-service-gradient">
+                <div class="flex items-center space-x-4">
+                    <div class="icon-container bg-white bg-opacity-20">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Daftar Jasa Servis</h2>
+                        <p class="text-white text-opacity-90 text-sm font-medium">Pilih dari katalog jasa yang tersedia</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="search-container">
+                    <div class="relative">
+                        <svg class="search-icon w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"></path>
+                        </svg>
+                        <input type="text" id="serviceSearch" placeholder="🔍 Cari jasa servis..." class="input-field search-input" onkeyup="filterServices()">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table" id="serviceDatabase">
+                        <thead>
+                            <tr>
+                                <th class="database-service-header">Aksi</th>
+                                <th class="database-service-header">Nama Jasa</th>
+                                <th class="database-service-header">Harga</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serviceDatabaseBody">
+                            <!-- Service database rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parts Database Section -->
+        <div class="card card-gradient no-print" id="partDatabaseSection">
+            <div class="card-header database-parts-gradient">
+                <div class="flex items-center space-x-4">
+                    <div class="icon-container bg-white bg-opacity-20">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Daftar Part / Bahan</h2>
+                        <p class="text-white text-opacity-90 text-sm font-medium">Pilih dari katalog part yang tersedia</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="search-container">
+                    <div class="relative">
+                        <svg class="search-icon w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"></path>
+                        </svg>
+                        <input type="text" id="partSearch" placeholder="🔍 Cari part / bahan..." class="input-field search-input" onkeyup="filterParts()">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table" id="partDatabase">
+                        <thead>
+                            <tr>
+                                <th class="database-parts-header">Aksi</th>
+                                <th class="database-parts-header">Nama Part</th>
+                                <th class="database-parts-header">Harga</th>
+                                <th class="database-parts-header">Kode</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partDatabaseBody">
+                            <!-- Part database rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Data Section (New Section) -->
+        <div class="card card-gradient" id="manageDataSection" style="display: none;">
+            <div class="card-header manage-data-header">
+                <div class="flex items-center space-x-4">
+                    <div class="icon-container bg-white bg-opacity-20">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Kelola Data Jasa & Part</h2>
+                        <p class="text-white text-opacity-90 text-sm font-medium">Tambah, Edit, atau Hapus data jasa dan part</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Manage Services -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Kelola Jasa Servis</h3>
+                        <form id="serviceForm" class="space-y-4">
+                            <div>
+                                <label for="serviceNameInput" class="block text-sm font-medium text-gray-700">Nama Jasa</label>
+                                <input type="text" id="serviceNameInput" class="input-field" placeholder="Contoh: Service Berkala 10,000 Km" required>
+                            </div>
+                            <div>
+                                <label for="servicePriceInput" class="block text-sm font-medium text-gray-700">Harga</label>
+                                <input type="number" id="servicePriceInput" class="input-field" placeholder="Contoh: 150000" min="0" required>
+                            </div>
+                            <div>
+                                <label for="serviceGroupInput" class="block text-sm font-medium text-gray-700">Grup Jasa</label>
+                                <input type="text" id="serviceGroupInput" class="input-field" placeholder="Contoh: 01. Service Berkala" required>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button type="submit" class="btn-success btn-animated">Simpan Jasa</button>
+                                <button type="button" onclick="resetServiceForm()" class="btn-secondary btn-animated">Batal</button>
+                            </div>
+                            <input type="hidden" id="serviceIdToEdit">
+                        </form>
+                        <div class="mt-6 overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th class="manage-data-header">Nama Jasa</th>
+                                        <th class="manage-data-header">Harga</th>
+                                        <th class="manage-data-header">Grup</th>
+                                        <th class="manage-data-header">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="manageServiceTableBody">
+                                    <!-- Managed service rows will be added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Manage Parts -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Kelola Part / Bahan</h3>
+                        <form id="partForm" class="space-y-4">
+                            <div>
+                                <label for="partNameInput" class="block text-sm font-medium text-gray-700">Nama Part</label>
+                                <input type="text" id="partNameInput" class="input-field" placeholder="Contoh: TMO SYN 10W-40SN 1LT" required>
+                            </div>
+                            <div>
+                                <label for="partPriceInput" class="block text-sm font-medium text-gray-700">Harga</label>
+                                <input type="number" id="partPriceInput" class="input-field" placeholder="Contoh: 113000" min="0" required>
+                            </div>
+                            <div>
+                                <label for="partGroupInput" class="block text-sm font-medium text-gray-700">Grup Part</label>
+                                <input type="text" id="partGroupInput" class="input-field" placeholder="Contoh: 01. TMO Oil Products" required>
+                            </div>
+                            <div>
+                                <label for="partCodeInput" class="block text-sm font-medium text-gray-700">Kode Part</label>
+                                <input type="text" id="partCodeInput" class="input-field" placeholder="Contoh: TMO 10W-40+">
+                            </div>
+                            <div class="flex space-x-2">
+                                <button type="submit" class="btn-success btn-animated">Simpan Part</button>
+                                <button type="button" onclick="resetPartForm()" class="btn-secondary btn-animated">Batal</button>
+                            </div>
+                            <input type="hidden" id="partIdToEdit">
+                        </form>
+                        <div class="mt-6 overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th class="manage-data-header">Nama Part</th>
+                                        <th class="manage-data-header">Harga</th>
+                                        <th class="manage-data-header">Grup</th>
+                                        <th class="manage-data-header">Kode</th>
+                                        <th class="manage-data-header">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="managePartTableBody">
+                                    <!-- Managed part rows will be added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<div class="card card-gradient no-print" id="historySection">
+    <div class="card-header database-service-header">
+        <h2 class="text-2xl font-bold text-white">Riwayat Estimasi Tersimpan</h2>
+    </div>
+    <div class="card-content">
+        <input type="text" id="cariNopol" placeholder="🔍 Ketik No Polisi untuk mencari..." 
+               class="input-field mb-4" onkeyup="filterRiwayat()">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="database-service-header">Tanggal</th>
+                    <th class="database-service-header">No Polisi</th>
+                    <th class="database-service-header">Total</th>
+                    <th class="database-service-header">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="riwayatTableBody"></tbody>
+        </table>
+    </div>
+</div>
+    </main>
+
+    <!-- Print Only Footer -->
+    <div class="print-footer" style="display: none;">
+        <p>Terima kasih atas kepercayaan Anda menggunakan layanan kami</p>
+        <p>Estimasi ini berlaku selama 7 hari dari tanggal diterbitkan</p>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollTopBtn" class="scroll-to-top no-print" onclick="scrollToTop()" style="display: none;">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </button>
+
+    <script>
+        // --- Data Storage and Persistence ---
+        let serviceEstimations = [];
+        let partEstimations = [];
+        let serviceIdCounter = 1; // Used for estimation IDs
+        let partIdCounter = 1;    // Used for estimation IDs
+
+        // Initial/Default Service Database
+        const defaultServiceDatabase = [
+            { id: 1, name: "Service Berkala 10,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 2, name: "Service Berkala 20,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 3, name: "Service Berkala 30,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 4, name: "Service Berkala 40,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 5, name: "Service Berkala 50,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 6, name: "Service Berkala 60,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 7, name: "Service Berkala 70,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 8, name: "Service Berkala 80,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 9, name: "Service Berkala 90,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 10, name: "Service Berkala 100,000 Km", price: 1, group: "01. Service Berkala" },
+            { id: 11, name: "NITROGEN", price: 16000, group: "02. PARAMITHA" },
+            { id: 12, name: "SPOORING P", price: 185000, group: "02. PARAMITHA" },
+            { id: 13, name: "SPOORING L", price: 220000, group: "02. PARAMITHA" },
+            { id: 14, name: "REMATCHING DISC BRAKE / PCS", price: 154000, group: "02. PARAMITHA" },
+            { id: 15, name: "BALANCE", price: 20000, group: "02. PARAMITHA" },
+            { id: 16, name: "BONGKAR PASANG BAN 1 PCS", price: 25000, group: "02. PARAMITHA" },
+            { id: 17, name: "FLUSHING MATIC", price: 370000, group: "03. MULTI" },
+            { id: 18, name: "FLUSHING P/S", price: 400000, group: "03. MULTI" },
+            { id: 19, name: "FLUSHING OIL", price: 350000, group: "03. MULTI" },
+            { id: 20, name: "HEADLAMP CARE", price: 115000, group: "03. MULTI" },
+            { id: 21, name: "CHAMBER CATALYTIC CLEANER", price: 235000, group: "03. MULTI" },
+            { id: 22, name: "FLUSHING RADIATOR", price: 200000, group: "03. MULTI" },
+            { id: 23, name: "GREASING STEERING RACK", price: 250000, group: "03. MULTI" },
+            { id: 24, name: "SKIMMING DRUM BRAKE", price: 330000, group: "03. MULTI" },
+            { id: 25, name: "CHAMBER CLEAN", price: 215000, group: "03. MULTI" },
+            { id: 26, name: "NANO GLASS ALL", price: 275000, group: "03. MULTI" },
+            { id: 27, name: "OZONIZER", price: 200000, group: "03. MULTI" },
+            { id: 28, name: "LIGHT SERVICE BLOWER", price: 200000, group: "04. DENSO" },
+            { id: 29, name: "SUPERLIGHT AC + ENDOSSCOPE", price: 380000, group: "04. DENSO" },
+            { id: 30, name: "FREON + OLI COMPRESSOR", price: 360750, group: "04. DENSO" },
+            { id: 31, name: "FRESH SERVICE", price: 217000, group: "04. DENSO" },
+            { id: 32, name: "ENGINE ROOM TREATMENT", price: 176000, group: "05. DHARMESTA" },
+            { id: 33, name: "HYDRO CARBON", price: 310000, group: "06. MITRA" },
+            { id: 34, name: "MUFLLER CATALYTIC CLEANER", price: 220000, group: "07. ANGGADA" }
+        ];
+        let serviceDatabase = [];
+        let nextServiceDbId = 1; // Used for database IDs
+
+        // Initial/Default Part Database
+        const defaultPartDatabase = [
+            { id: 1, name: "TMO SYN 10W-40SN 1LT", price: 113000, group: "01. TMO Oil Products", code: "TMO 10W-40+" },
+            { id: 2, name: "TMO SYN 10W-40SN 4LT", price: 445000, group: "01. TMO Oil Products", code: "TMO 10W-40+" },
+            { id: 3, name: "TMO FULL 5W-30SN 1LT", price: 128000, group: "01. TMO Oil Products", code: "TMO 5W-30+" },
+            { id: 4, name: "TMO FULL 5W-30SN 4LT", price: 470000, group: "01. TMO Oil Products", code: "TMO 5W-30+" },
+            { id: 5, name: "TMO FULL 0W-20SN 1LT", price: 195000, group: "01. TMO Oil Products", code: "TMO 0W-20+" },
+            { id: 6, name: "TMO FULL 0W-20SN 4LT", price: 790000, group: "01. TMO Oil Products", code: "TMO 0W-20+" },
+            { id: 7, name: "TMO FULL 0W-16SN 1LT", price: 200000, group: "01. TMO Oil Products", code: "TMO 0W-16+" },
+            { id: 8, name: "TMO FULL 0W-16SN 4LT", price: 800000, group: "01. TMO Oil Products", code: "TMO 0W-16+" },
+            { id: 9, name: "TMO 10W-30 DRUM 1LT", price: 113000, group: "01. TMO Oil Products", code: "TMO 10W-30+" },
+            { id: 10, name: "TGO TRANSMISI", price: 75000, group: "02. Transmission & Gardan", code: "TGO TRANS+" },
+            { id: 11, name: "TGO GARDAN", price: 79000, group: "02. Transmission & Gardan", code: "TGO GEAR+" },
+            { id: 12, name: "GASKET", price: 13000, group: "03. Gasket", code: "GASKET+" },
+            { id: 13, name: "GASKET TGO", price: 12000, group: "03. Gasket", code: "GASKET TGO+" },
+            { id: 14, name: "SPR LONG LIFE CLN 1L", price: 57000, group: "04. Radiator & Coolant", code: "COOLANT 1 L+" },
+            { id: 15, name: "SUPER LONG LIFE 4 CL", price: 157000, group: "04. Radiator & Coolant", code: "COOLANT 1GL+" },
+            { id: 16, name: "BRAKE FLUID", price: 58000, group: "05. Brake Fluids", code: "BF+" },
+            { id: 17, name: "ATM FLUID TYPE-TIV", price: 400000, group: "06. ATF / CVT Fluids", code: "ATM TIV+" },
+            { id: 18, name: "ATM FLUID TYPE-WS", price: 378000, group: "06. ATF / CVT Fluids", code: "ATM WS+" },
+            { id: 19, name: "ATM FLUID TYPE-CVT", price: 505000, group: "06. ATF / CVT Fluids", code: "ATM CVT+" },
+            { id: 20, name: "FILTER A/C", price: 200000, group: "07. Filter A/C", code: "FILTER A/C+" },
+            { id: 21, name: "OIL FILTER INV,FTR,HL", price: 102000, group: "08. Oil Filters", code: "OF+" },
+            { id: 22, name: "OIL FILTER YRS,VS,VXY", price: 98000, group: "08. Oil Filters", code: "OF+" },
+            { id: 23, name: "OIL FILTER DS", price: 35000, group: "08. Oil Filters", code: "OF+" },
+            { id: 24, name: "OIL FILTER ELEMENT", price: 151000, group: "08. Oil Filters", code: "OF+" },
+            { id: 25, name: "OIL FILTER", price: 0, group: "08. Oil Filters", code: "OF+" },
+            { id: 26, name: "FUEL FILTER AV,RS NEW", price: 350000, group: "09. Fuel Filters", code: "FF+" },
+            { id: 27, name: "FUEL FILTER INV,FRT", price: 700000, group: "09. Fuel Filters", code: "FF+" },
+            { id: 28, name: "FUEL FILTER", price: 0, group: "09. Fuel Filters", code: "FF+" },
+            { id: 29, name: "AIR CLEANER ZNX", price: 152000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 30, name: "AIR CLEANER INV, FTR OLD", price: 300000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 31, name: "AIR CLEANER INV, FTR NEW", price: 286000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 32, name: "AIR CLEANER CLY", price: 152000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 33, name: "AIR CLEANER AG", price: 95000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 34, name: "AIR CLEANER AV,RS NR", price: 207000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 35, name: "AIR CLEANER AV,RS 2-3", price: 172000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 36, name: "AIR CLEANER ALP", price: 450000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 37, name: "AIR CLEANER VS", price: 115000, group: "10. Air Cleaners", code: "AC+" },
+            { id: 38, name: "AIR CLEANER", price: 0, group: "10. Air Cleaners", code: "AC+" },
+            { id: 39, name: "BUSI INV,FTR BENSIN IRIDIUM", price: 264000, group: "11. Spark Plugs (Busi)", code: "BUSI+" },
+            { id: 40, name: "BUSI INV,FTR BENSIN OLD", price: 32000, group: "11. Spark Plugs (Busi)", code: "BUSI+" },
+            { id: 41, name: "BUSI VS", price: 23000, group: "11. Spark Plugs (Busi)", code: "BUSI+" },
+            { id: 42, name: "BUSI AV,RS, DLL NR", price: 130000, group: "11. Spark Plugs (Busi)", code: "BUSI+" },
+            { id: 43, name: "BUSI AV,RS OLD", price: 33000, group: "11. Spark Plugs (Busi)", code: "BUSI+" },
+            { id: 44, name: "BUSI", price: 0, group: "11. Spark Plugs (Busi)", code: "BUSI+" },
+            { id: 45, name: "WIPER FLUID", price: 39500, group: "12. Additives & Fluids", code: "WF+" },
+            { id: 46, name: "CARBON CLEAN", price: 215000, group: "12. Additives & Fluids", code: "CRB CLN+" },
+            { id: 47, name: "HYDRO CARBON", price: 310000, group: "12. Additives & Fluids", code: "HC+" },
+            { id: 48, name: "SUPER ENGINE CONDITIONER", price: 101000, group: "12. Additives & Fluids", code: "SEC+" },
+            { id: 49, name: "ENGINE FLUSH", price: 72000, group: "12. Additives & Fluids", code: "EF+" },
+            { id: 50, name: "INJECTOR CLEANER", price: 123000, group: "12. Additives & Fluids", code: "IC+" },
+            { id: 51, name: "SILICON SPRAY", price: 63000, group: "12. Additives & Fluids", code: "SSP+" },
+            { id: 52, name: "BRAKE CLEANER", price: 67000, group: "12. Additives & Fluids", code: "BC+" },
+            { id: 53, name: "BRAKE GREASE", price: 55000, group: "12. Additives & Fluids", code: "GREASE+" },
+            { id: 54, name: "TIMAH BALANCE", price: 20000, group: "12. Additives & Fluids", code: "BALANCE+" }
+        ];
+        let partDatabase = [];
+        let nextPartDbId = 1; // Used for database IDs
+
+        // --- Utility Functions ---
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(amount);
+        }
+
+        function calculateTotal(price, qty = 1, discount = 0) {
+            const subtotal = price * qty;
+            const discountAmount = (subtotal * discount) / 100;
+            return Math.max(0, subtotal - discountAmount);
+        }
+
+        function calculateDiscountAmount(price, qty = 1, discount = 0) {
+            const subtotal = price * qty;
+            return (subtotal * discount) / 100;
+        }
+
+        function highlight(element) {
+            element.classList.add('highlight');
+            setTimeout(() => element.classList.remove('highlight'), 1000);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            let icon = '';
+            if (type === 'success') {
+                icon = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            } else if (type === 'error') {
+                icon = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            } else if (type === 'info') {
+                icon = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            }
+            toast.innerHTML = `<div class="flex items-center">${icon}${message}</div>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function copyToClipboard(text, successMessage = 'Berhasil disalin!', errorMessage = 'Gagal menyalin!') {
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(successMessage, 'success');
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    showToast(errorMessage, 'error');
+                });
+            } else {
+                showToast('Tidak ada teks untuk disalin.', 'info');
+            }
+        }
+
+        // --- Data Storage and Persistence ---
+        function saveData() {
+    // Tetap simpan di lokal sebagai cadangan
+    localStorage.setItem('serviceDatabase', JSON.stringify(serviceDatabase));
+    localStorage.setItem('partDatabase', JSON.stringify(partDatabase));
+
+    // KIRIM KE CLOUD (Firebase)
+    if (window.dbSet) {
+        window.dbSet(window.dbRef(window.db, 'master_data/services'), serviceDatabase);
+        window.dbSet(window.dbRef(window.db, 'master_data/parts'), partDatabase);
+    }
+}
+
+        // Modified sortServiceDatabase to rely on numeric prefixes in group names
+        function sortServiceDatabase() {
+            serviceDatabase.sort((a, b) => {
+                // Sort by group name alphabetically (which now respects the numeric prefix)
+                if (a.group !== b.group) return a.group.localeCompare(b.group);
+                
+                // Finally, sort by original ID within the same group
+                return a.id - b.id;
+            });
+        }
+
+        // Modified sortPartDatabase to rely on numeric prefixes in group names
+        function sortPartDatabase() {
+            partDatabase.sort((a, b) => {
+                // Sort by group name alphabetically (which now respects the numeric prefix)
+                if (a.group !== b.group) return a.group.localeCompare(b.group);
+                
+                // Then sort by original ID within the same group
+                return a.id - b.id;
+            });
+        }
+
+        function loadData() {
+    // Ambil data dari Firebase
+    const serviceRef = window.dbRef(window.db, 'master_data/services');
+    window.dbOnValue(serviceRef, (snapshot) => {
+        if (snapshot.exists()) {
+            serviceDatabase = snapshot.val();
+            renderServiceDatabase();
+            renderManageServiceTable();
+        } else {
+            // Jika di cloud kosong, pakai default
+            serviceDatabase = [...defaultServiceDatabase];
+        }
+    });
+
+    const partRef = window.dbRef(window.db, 'master_data/parts');
+    window.dbOnValue(partRef, (snapshot) => {
+        if (snapshot.exists()) {
+            partDatabase = snapshot.val();
+            renderPartDatabase();
+            renderManagePartTable();
+        } else {
+            partDatabase = [...defaultPartDatabase];
+        }
+    });
+}
+
+        function addManualService() {
+    const estimation = {
+        id: serviceIdCounter++,
+        serviceId: null,
+        serviceName: '',
+        price: 0,
+        qty: 1,
+        discount: 0,
+        total: 0,
+        isEditing: true
+    };
+
+    serviceEstimations.push(estimation);
+    renderServiceEstimations();
+    saveData();
+    
+    // Auto-focus ke input nama jasa yang baru dibuat
+    setTimeout(() => {
+        const newRow = document.querySelector(`#serviceTableBody tr[data-id="${estimation.id}"] input[name="serviceName"]`);
+        if (newRow) newRow.focus();
+    }, 0);
+}
+
+function addServiceFromDatabase(serviceId) {
+    const service = serviceDatabase.find(s => s.id === serviceId);
+    if (!service) return;
+
+    const estimation = {
+        id: serviceIdCounter++,
+        serviceId: service.id,
+        serviceName: service.name,
+        price: service.price,
+        qty: 1,
+        discount: 0,
+        total: service.price,
+        isEditing: false
+    };
+
+    serviceEstimations.push(estimation);
+    renderServiceEstimations();
+    updateTotals(); // Memperbarui Grand Total & Total Discount All
+    saveData();
+    showToast('⚙️ Jasa telah ditambahkan ke estimasi!', 'success');
+}
+
+// --- FUNGSI UPDATE TOTAL (GABUNGAN DENGAN DISCOUNT ALL) ---
+
+function updateTotals() {
+    // 1. Hitung Subtotal Jasa dan Part
+    const totalJasa = serviceEstimations.reduce((sum, item) => sum + item.total, 0);
+    const totalPart = partEstimations.reduce((sum, item) => sum + item.total, 0);
+    const grandTotal = totalJasa + totalPart;
+    
+    // 2. Hitung Nominal Diskon (untuk Jasa, Part, dan Gabungan)
+    const totalDiscountService = serviceEstimations.reduce((sum, item) => sum + calculateDiscountAmount(item.price, item.qty, item.discount), 0);
+    const totalDiscountPart = partEstimations.reduce((sum, item) => sum + calculateDiscountAmount(item.price, item.qty, item.discount), 0);
+    const totalDiscountAll = totalDiscountService + totalDiscountPart;
+
+    // 3. Update Tampilan ke HTML
+    document.getElementById('totalJasa').textContent = formatRupiah(totalJasa);
+    document.getElementById('totalPart').textContent = formatRupiah(totalPart);
+    document.getElementById('grandTotal').textContent = formatRupiah(grandTotal);
+    document.getElementById('totalDiscountService').textContent = formatRupiah(totalDiscountService);
+    document.getElementById('totalDiscountPart').textContent = formatRupiah(totalDiscountPart);
+    
+    // Update elemen Total Discount All yang baru ditambahkan
+    const discountAllElem = document.getElementById('totalDiscountAll');
+    if (discountAllElem) {
+        discountAllElem.textContent = formatRupiah(totalDiscountAll);
+    }
+
+    // 4. Berikan Efek Animasi Highlight
+    highlight(document.getElementById('totalJasa'));
+    highlight(document.getElementById('totalPart'));
+    highlight(document.getElementById('grandTotal'));
+    if (discountAllElem) highlight(discountAllElem);
+}
+
+        function updateServiceEstimation(id, field, value) {
+            const estimation = serviceEstimations.find(e => e.id === id);
+            if (!estimation) return;
+
+            if (field === 'serviceName') {
+                if (!value.trim()) {
+                    showToast('❌ Nama jasa tidak boleh kosong!', 'error');
+                    // Revert to editing mode if name is empty
+                    estimation.isEditing = true; 
+                } else {
+                    estimation.serviceName = value;
+                    estimation.isEditing = false; // Exit editing mode if name is valid
+                }
+            } else {
+                const parsedValue = parseFloat(value); // Use parseFloat for price, parseInt for qty/discount
+                if (isNaN(parsedValue) || parsedValue < 0) {
+                    showToast('❌ Harga/QTY/Diskon harus angka positif!', 'error');
+                    // Do not update the value if invalid, let the user correct it
+                    renderServiceEstimations(); // Re-render to show old value
+                    return;
+                }
+                if (field === 'discount' && parsedValue > 100) {
+                    showToast('❌ Diskon tidak boleh lebih dari 100%!', 'error');
+                    renderServiceEstimations();
+                    return;
+                }
+                estimation[field] = field === 'qty' ? Math.max(1, parseInt(parsedValue)) : parsedValue;
+                estimation.total = calculateTotal(estimation.price, estimation.qty, estimation.discount);
+            }
+
+            renderServiceEstimations();
+            updateTotals();
+            saveData();
+        }
+
+        function deleteServiceEstimation(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus jasa ini dari estimasi?')) return;
+            serviceEstimations = serviceEstimations.filter(e => e.id !== id);
+            renderServiceEstimations();
+            updateTotals();
+            saveData();
+            showToast('🗑️ Jasa telah dihapus dari estimasi', 'info');
+        }
+
+        function renderServiceEstimations() {
+            const tbody = document.getElementById('serviceTableBody');
+            tbody.innerHTML = '';
+
+            serviceEstimations.forEach(estimation => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-id', estimation.id); // Add data-id for easy selection
+                
+                row.innerHTML = `
+                    <td class="font-bold text-gray-800 flex items-center">
+                        ${estimation.isEditing ? 
+                            `<input type="text" name="serviceName" class="input-field" placeholder="Masukkan nama jasa..." value="${estimation.serviceName}" onblur="updateServiceEstimation(${estimation.id}, 'serviceName', this.value)" autofocus>` :
+                            `<button onclick="copyToClipboard('${estimation.serviceName}', 'Nama jasa disalin!')" class="btn-copy no-print">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1.5M9 3l2-2 2 2M9 3h6M9 3v1.5M15 3v1.5M15 5H9m6 0h2a2 2 0 012 2v2.5M15 5v2.5"></path>
+                                </svg>
+                            </button>
+                            <span>${estimation.serviceName}</span>`
+                        }
+                    </td>
+                    <td>
+                        <input type="number" class="input-field" value="${estimation.price}" min="0" onchange="updateServiceEstimation(${estimation.id}, 'price', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="input-field qty-input" value="${estimation.qty}" min="1" onchange="updateServiceEstimation(${estimation.id}, 'qty', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="input-field" value="${estimation.discount}" min="0" max="100" onchange="updateServiceEstimation(${estimation.id}, 'discount', this.value)">
+                    </td>
+                    <td>
+                        <span class="price-tag">${formatRupiah(estimation.total)}</span>
+                    </td>
+                    <td class="no-print">
+                        <button onclick="deleteServiceEstimation(${estimation.id})" class="btn-danger btn-animated">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path>
+                            </svg>
+                            Hapus
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // --- Part Estimation Functions ---
+        function addPartFromDatabase(partId) {
+            const part = partDatabase.find(p => p.id === partId);
+            if (!part) return;
+
+            const estimation = {
+                id: partIdCounter++,
+                partId: part.id,
+                partName: part.name,
+                price: part.price,
+                qty: 1,
+                discount: 0,
+                total: part.price,
+                code: part.code,
+                isEditing: false // Set to false by default for database items
+            };
+
+            partEstimations.push(estimation);
+            renderPartEstimations();
+            updateTotals();
+            updatePartCodesDisplay();
+            saveData();
+            showToast('🔧 Part telah ditambahkan ke estimasi!', 'success');
+        }
+
+        function addManualPart() {
+            const estimation = {
+                id: partIdCounter++,
+                partId: null,
+                partName: '',
+                price: 0,
+                qty: 1,
+                discount: 0,
+                total: 0,
+                code: '',
+                isEditing: true
+            };
+
+            partEstimations.push(estimation);
+            renderPartEstimations();
+            saveData();
+            // Focus on the newly added input field
+            setTimeout(() => {
+                const newRow = document.querySelector(`#partTableBody tr[data-id="${estimation.id}"] input[name="partName"]`);
+                if (newRow) newRow.focus();
+            }, 0);
+        }
+
+        function updatePartEstimation(id, field, value) {
+            const estimation = partEstimations.find(e => e.id === id);
+            if (!estimation) return;
+
+            if (field === 'partName') {
+                if (!value.trim()) {
+                    showToast('❌ Nama part tidak boleh kosong!', 'error');
+                    estimation.isEditing = true;
+                } else {
+                    estimation.partName = value;
+                    estimation.isEditing = false;
+                }
+            } else if (field === 'code') {
+                estimation.code = value;
+            } else {
+                const parsedValue = parseFloat(value);
+                if (isNaN(parsedValue) || parsedValue < 0) {
+                    showToast('❌ Harga/QTY/Diskon harus angka positif!', 'error');
+                    renderPartEstimations();
+                    return;
+                }
+                if (field === 'discount' && parsedValue > 100) {
+                    showToast('❌ Diskon tidak boleh lebih dari 100%!', 'error');
+                    renderPartEstimations();
+                    return;
+                }
+                estimation[field] = field === 'qty' ? Math.max(1, parseInt(parsedValue)) : parsedValue;
+                estimation.total = calculateTotal(estimation.price, estimation.qty, estimation.discount);
+            }
+
+            renderPartEstimations();
+            updateTotals();
+            updatePartCodesDisplay();
+            saveData();
+        }
+
+        function deletePartEstimation(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus part ini dari estimasi?')) return;
+            partEstimations = partEstimations.filter(e => e.id !== id);
+            renderPartEstimations();
+            updateTotals();
+            updatePartCodesDisplay();
+            saveData();
+            showToast('🗑️ Part telah dihapus dari estimasi', 'info');
+        }
+
+        function renderPartEstimations() {
+            const tbody = document.getElementById('partTableBody');
+            tbody.innerHTML = '';
+
+            partEstimations.forEach(estimation => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-id', estimation.id); // Add data-id for easy selection
+                
+                row.innerHTML = `
+                    <td class="font-bold text-gray-800 flex items-center">
+                        ${estimation.isEditing ? 
+                            `<input type="text" name="partName" class="input-field" placeholder="Masukkan nama part..." value="${estimation.partName}" onblur="updatePartEstimation(${estimation.id}, 'partName', this.value)" autofocus>` :
+                            `<button onclick="copyToClipboard('${estimation.partName}', 'Nama part disalin!')" class="btn-copy no-print">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1.5M9 3l2-2 2 2M9 3h6M9 3v1.5M15 3v1.5M15 5H9m6 0h2a2 2 0 012 2v2.5M15 5v2.5"></path>
+                                </svg>
+                            </button>
+                            <span>${estimation.partName}</span>`
+                        }
+                    </td>
+                    <td>
+                        <input type="number" class="input-field" value="${estimation.price}" min="0" onchange="updatePartEstimation(${estimation.id}, 'price', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="input-field qty-input" value="${estimation.qty}" min="1" onchange="updatePartEstimation(${estimation.id}, 'qty', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="input-field" value="${estimation.discount}" min="0" max="100" onchange="updatePartEstimation(${estimation.id}, 'discount', this.value)">
+                    </td>
+                    <td>
+                        <span class="price-tag">${formatRupiah(estimation.total)}</span>
+                    </td>
+                    <td class="no-print">
+                        <button onclick="deletePartEstimation(${estimation.id})" class="btn-danger btn-animated">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path>
+                            </svg>
+                            Hapus
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // --- Database Rendering Functions ---
+        function renderServiceDatabase() {
+            const tbody = document.getElementById('serviceDatabaseBody');
+            tbody.innerHTML = '';
+
+            sortServiceDatabase(); // Ensure sorted before grouping
+
+            const groupedServices = serviceDatabase.reduce((acc, service) => {
+                (acc[service.group] = acc[service.group] || []).push(service);
+                return acc;
+            }, {});
+
+            const sortedGroups = Object.keys(groupedServices).sort();
+
+            for (const group of sortedGroups) {
+                const groupRow = document.createElement('tr');
+                groupRow.className = 'group-header';
+                groupRow.innerHTML = `<th colspan="3">${group.replace(/^\d+\.\s*/, '')}</th>`;
+                tbody.appendChild(groupRow);
+
+                // Services within the group are already sorted by ID due to sortServiceDatabase()
+                groupedServices[group].forEach(service => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>
+                            <button onclick="addServiceFromDatabase(${service.id})" class="btn-info btn-animated btn-select">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Pilih
+                            </button>
+                        </td>
+                        <td class="font-bold text-gray-800">${service.name}</td>
+                        <td><span class="price-tag">${formatRupiah(service.price)}</span></td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        function renderPartDatabase() {
+            const tbody = document.getElementById('partDatabaseBody');
+            tbody.innerHTML = '';
+
+            sortPartDatabase(); // Ensure sorted before grouping
+
+            const groupedParts = partDatabase.reduce((acc, part) => {
+                (acc[part.group] = acc[part.group] || []).push(part);
+                return acc;
+            }, {});
+
+            const sortedGroups = Object.keys(groupedParts).sort();
+
+            for (const group of sortedGroups) {
+                const groupRow = document.createElement('tr');
+                groupRow.className = 'group-header';
+                groupRow.innerHTML = `<th colspan="4">${group.replace(/^\d+\.\s*/, '')}</th>`;
+                tbody.appendChild(groupRow);
+
+                // Parts within the group are already sorted by ID due to sortPartDatabase()
+                groupedParts[group].forEach(part => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>
+                            <button onclick="addPartFromDatabase(${part.id})" class="btn-success btn-animated btn-select">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Pilih
+                            </button>
+                        </td>
+                        <td class="font-bold text-gray-800">${part.name}</td>
+                        <td><span class="price-tag">${formatRupiah(part.price)}</span></td>
+                        <td><span class="font-medium text-gray-700">${part.code || '-'}</span></td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // --- Filter Functions ---
+        function filterServices() {
+            const searchTerm = document.getElementById('serviceSearch').value.toLowerCase();
+            const tbody = document.getElementById('serviceDatabaseBody');
+            tbody.innerHTML = ''; // Clear and re-render based on filter
+
+            const filteredServices = serviceDatabase.filter(service => 
+                service.name.toLowerCase().includes(searchTerm) || 
+                service.group.toLowerCase().includes(searchTerm)
+            );
+
+            const groupedFilteredServices = filteredServices.reduce((acc, service) => {
+                (acc[service.group] = acc[service.group] || []).push(service);
+                return acc;
+            }, {});
+
+            const sortedGroups = Object.keys(groupedFilteredServices).sort();
+
+            for (const group of sortedGroups) {
+                const groupRow = document.createElement('tr');
+                groupRow.className = 'group-header';
+                groupRow.innerHTML = `<th colspan="3">${group.replace(/^\d+\.\s*/, '')}</th>`;
+                tbody.appendChild(groupRow);
+
+                // Services within the group are already sorted by ID due to sortServiceDatabase()
+                groupedFilteredServices[group].forEach(service => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <button onclick="addServiceFromDatabase(${service.id})" class="btn-info btn-animated btn-select">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Pilih
+                            </button>
+                        </td>
+                        <td class="font-bold text-gray-800">${service.name}</td>
+                        <td><span class="price-tag">${formatRupiah(service.price)}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        function filterParts() {
+            const searchTerm = document.getElementById('partSearch').value.toLowerCase();
+            const tbody = document.getElementById('partDatabaseBody');
+            tbody.innerHTML = ''; // Clear and re-render based on filter
+
+            const filteredParts = partDatabase.filter(part => 
+                part.name.toLowerCase().includes(searchTerm) || 
+                part.group.toLowerCase().includes(searchTerm) ||
+                (part.code && part.code.toLowerCase().includes(searchTerm))
+            );
+
+            const groupedFilteredParts = filteredParts.reduce((acc, part) => {
+                (acc[part.group] = acc[part.group] || []).push(part);
+                return acc;
+            }, {});
+
+            const sortedGroups = Object.keys(groupedFilteredParts).sort();
+
+            for (const group of sortedGroups) {
+                const groupRow = document.createElement('tr');
+                groupRow.className = 'group-header';
+                groupRow.innerHTML = `<th colspan="4">${group.replace(/^\d+\.\s*/, '')}</th>`;
+                tbody.appendChild(groupRow);
+
+                // Parts within the group are already sorted by ID due to sortPartDatabase()
+                groupedFilteredParts[group].forEach(part => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <button onclick="addPartFromDatabase(${part.id})" class="btn-success btn-animated btn-select">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Pilih
+                            </button>
+                        </td>
+                        <td class="font-bold text-gray-800">${part.name}</td>
+                        <td><span class="price-tag">${formatRupiah(part.price)}</span></td>
+                        <td><span class="font-medium text-gray-700">${part.code || '-'}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // --- Calculation Functions ---
+        function updateTotals() {
+    // 1. Hitung Total Jasa dan Part
+    const totalJasa = serviceEstimations.reduce((sum, item) => sum + item.total, 0);
+    const totalPart = partEstimations.reduce((sum, item) => sum + item.total, 0);
+    const grandTotal = totalJasa + totalPart;
+
+    // 2. Hitung Potongan Diskon masing-masing
+    const totalDiscountService = serviceEstimations.reduce((sum, item) => sum + calculateDiscountAmount(item.price, item.qty, item.discount), 0);
+    const totalDiscountPart = partEstimations.reduce((sum, item) => sum + calculateDiscountAmount(item.price, item.qty, item.discount), 0);
+
+    // 3. Hitung GABUNGAN seluruh diskon
+    const totalDiscountAll = totalDiscountService + totalDiscountPart;
+
+    // 4. Update teks ke elemen HTML
+    document.getElementById('totalJasa').textContent = formatRupiah(totalJasa);
+    document.getElementById('totalPart').textContent = formatRupiah(totalPart);
+    document.getElementById('grandTotal').textContent = formatRupiah(grandTotal);
+    document.getElementById('totalDiscountService').textContent = formatRupiah(totalDiscountService);
+    document.getElementById('totalDiscountPart').textContent = formatRupiah(totalDiscountPart);
+    
+    // Update elemen baru untuk Total Discount All
+    const discountAllElement = document.getElementById('totalDiscountAll');
+    if (discountAllElement) {
+        discountAllElement.textContent = formatRupiah(totalDiscountAll);
+    }
+
+    // 5. Berikan efek highlight animasi
+    highlight(document.getElementById('totalJasa'));
+    highlight(document.getElementById('totalPart'));
+    highlight(document.getElementById('grandTotal'));
+    highlight(document.getElementById('totalDiscountService'));
+    highlight(document.getElementById('totalDiscountPart'));
+    
+    if (discountAllElement) {
+        highlight(discountAllElement);
+    }
+}
+
+        // --- Part Codes Functionality ---
+        function updatePartCodesDisplay() {
+            const partCodesDisplay = document.getElementById('partCodesDisplay');
+            const uniqueCodes = new Set();
+            partEstimations.forEach(part => {
+                if (part.code) {
+                    uniqueCodes.add(part.code);
+                }
+            });
+            partCodesDisplay.textContent = Array.from(uniqueCodes).join('');
+        }
+
+        function copyPartCodes() {
+            const partCodesDisplay = document.getElementById('partCodesDisplay');
+            copyToClipboard(partCodesDisplay.textContent, 'Kode part berhasil disalin!');
+        }
+
+        function copyGrandTotal() {
+            const grandTotalElement = document.getElementById('grandTotal');
+            copyToClipboard(grandTotalElement.textContent, 'Grand Total berhasil disalin!');
+        }
+
+        // --- Action Functions ---
+        function handlePrint() {
+            document.getElementById('printDate').textContent = new Date().toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            window.print();
+        }
+
+        function handleDownload() {
+            const downloadBtn = event.target.closest('button');
+            const originalHTML = downloadBtn.innerHTML;
+            
+            downloadBtn.innerHTML = `
+                <svg class="w-5 h-5 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"></path>
+                </svg>
+                Mengunduh...
+            `;
+            downloadBtn.disabled = true;
+
+            const printContent = createPrintContent();
+            
+            html2canvas(printContent, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                width: 800,
+                height: printContent.scrollHeight
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'estimasi-servis-bengkel.png';
+                link.href = canvas.toDataURL('image/png', 1.0);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                document.body.removeChild(printContent);
+                
+                downloadBtn.innerHTML = originalHTML;
+                downloadBtn.disabled = false;
+                showToast('Estimasi berhasil diunduh sebagai gambar!', 'success');
+            }).catch(error => {
+                console.error('Error generating image:', error);
+                if (printContent && printContent.parentNode) {
+                    document.body.removeChild(printContent);
+                }
+                downloadBtn.innerHTML = originalHTML;
+                downloadBtn.disabled = false;
+                showToast('Gagal mengunduh estimasi. Silakan coba lagi.', 'error');
+            });
+        }
+
+        function createPrintContent() {
+            const printDiv = document.createElement('div');
+            printDiv.style.position = 'absolute';
+            printDiv.style.left = '-9999px';
+            printDiv.style.top = '0';
+            printDiv.style.width = '800px';
+            printDiv.style.backgroundColor = '#ffffff';
+            printDiv.style.padding = '40px';
+            printDiv.style.fontFamily = 'Poppins, sans-serif';
+            
+            const currentDate = new Date().toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const totalJasa = serviceEstimations.reduce((sum, item) => sum + item.total, 0);
+            const totalPart = partEstimations.reduce((sum, item) => sum + item.total, 0);
+            const grandTotal = totalJasa + totalPart;
+            const totalDiscountService = serviceEstimations.reduce((sum, item) => sum + calculateDiscountAmount(item.price, item.qty, item.discount), 0);
+            const totalDiscountPart = partEstimations.reduce((sum, item) => sum + calculateDiscountAmount(item.price, item.qty, item.discount), 0);
+
+
+            printDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 25px; border-bottom: 2px solid #333; padding-bottom: 15px;">
+                    <h1 style="font-size: 22px; font-weight: bold; margin: 0; color: #000;">ESTIMASI SERVIS KENDARAAN</h1>
+                    <p style="font-size: 14px; margin: 10px 0; color: #666;">Bengkel Profesional - Sistem Manajemen Otomotif</p>
+                    <p style="font-size: 12px; margin: 5px 0; color: #666;">Tanggal: ${currentDate}</p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="background: #ffffff; border: 2px solid #333; border-radius: 15px; overflow: hidden;">
+                        <div style="background: #667eea; padding: 15px; border-bottom: 1px solid #666;">
+                            <h2 style="color: white; font-size: 16px; font-weight: bold; margin: 0;">JASA SERVIS</h2>
+                        </div>
+                        <div style="padding: 15px;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #333;">
+                                <thead>
+                                    <tr>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Nama Jasa</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Harga</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">QTY</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Diskon (%)</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${serviceEstimations.map((service, index) => `
+                                        <tr>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; font-weight: bold;">${service.serviceName}</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};">${formatRupiah(service.price)}</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};">${service.qty}</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};">${service.discount}%</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; font-weight: bold;">${formatRupiah(service.total)}</td>
+                                        </tr>
+                                    `).join('')}
+                                    ${serviceEstimations.length === 0 ? '<tr><td colspan="5" style="border: 1px solid #ccc; padding: 20px; text-align: center; color: #666;">Belum ada jasa servis dipilih</td></tr>' : ''}
+                                    <tr>
+                                        <td colspan="4" style="border: 1px solid #ccc; padding: 8px; text-align: right; font-weight: bold; background: #f8f9fa;">Total Potongan Diskon Jasa:</td>
+                                        <td style="border: 1px solid #ccc; padding: 8px; text-align: left; font-weight: bold; background: #f8f9fa;">${formatRupiah(totalDiscountService)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div style="margin-top: 15px; text-align: right;">
+                                <div style="background: #667eea; color: white; padding: 10px 20px; border-radius: 10px; display: inline-block; border: 1px solid #666;">
+                                    <span style="font-size: 14px; font-weight: bold;">Total Jasa: </span>
+                                    <span style="font-size: 18px; font-weight: black;">${formatRupiah(totalJasa)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="background: #ffffff; border: 2px solid #333; border-radius: 15px; overflow: hidden;">
+                        <div style="background: #f093fb; padding: 15px; border-bottom: 1px solid #666;">
+                            <h2 style="color: white; font-size: 16px; font-weight: bold; margin: 0;">PART / BAHAN</h2>
+                        </div>
+                        <div style="padding: 15px;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #333;">
+                                <thead>
+                                    <tr>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Nama Part / Bahan</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Harga</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">QTY</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Diskon (%)</th>
+                                        <th style="background: #f8f9fa; color: #000; border: 1px solid #ccc; padding: 10px; font-size: 11px; font-weight: bold; text-align: left;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${partEstimations.map((part, index) => `
+                                        <tr>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; font-weight: bold;">${part.partName}</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};">${formatRupiah(part.price)}</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};">${part.qty}</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};">${part.discount}%</td>
+                                            <td style="border: 1px solid #ccc; padding: 8px; text-align: left; background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; font-weight: bold;">${formatRupiah(part.total)}</td>
+                                        </tr>
+                                    `).join('')}
+                                    ${partEstimations.length === 0 ? '<tr><td colspan="5" style="border: 1px solid #ccc; padding: 20px; text-align: center; color: #666;">Belum ada part/bahan dipilih</td></tr>' : ''}
+                                    <tr>
+                                        <td colspan="4" style="border: 1px solid #ccc; padding: 8px; text-align: right; font-weight: bold; background: #f8f9fa;">Total Potongan Diskon Part:</td>
+                                        <td style="border: 1px solid #ccc; padding: 8px; text-align: left; font-weight: bold; background: #f8f9fa;">${formatRupiah(totalDiscountPart)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div style="margin-top: 15px; text-align: right;">
+                                <div style="background: #f093fb; color: white; padding: 10px 20px; border-radius: 10px; display: inline-block; border: 1px solid #666;">
+                                    <span style="font-size: 14px; font-weight: bold;">Total Part: </span>
+                                    <span style="font-size: 18px; font-weight: black;">${formatRupiah(totalPart)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: right; margin-bottom: 40px;">
+                    <div style="background: #a8edea; border: 2px solid #333; color: #000; padding: 20px 30px; border-radius: 15px; display: inline-block;">
+                        <span style="font-size: 20px; font-weight: bold;">GRAND TOTAL: </span>
+                        <span style="font-size: 28px; font-weight: black;">${formatRupiah(grandTotal)}</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 40px; padding-top: 15px; border-top: 1px solid #333; text-align: center; font-size: 10px; color: #666;">
+                    <p style="margin: 5px 0;">Terima kasih atas kepercayaan Anda menggunakan layanan kami</p>
+                    <p style="margin: 5px 0;">Estimasi ini berlaku selama 7 hari dari tanggal diterbitkan</p>
+                </div>
+            `;
+            
+            document.body.appendChild(printDiv);
+            return printDiv;
+        }
+
+        function handleReset() {
+    if (confirm('🗑️ Apakah Anda yakin ingin menghapus pilihan estimasi saat ini?')) {
+        // HANYA menghapus pilihan yang sedang dikerjakan
+        serviceEstimations = [];
+        partEstimations = [];
+        serviceIdCounter = 1;
+        partIdCounter = 1;
+
+        // JANGAN masukkan kode yang mereset serviceDatabase atau partDatabase di sini
+
+        renderServiceEstimations();
+        renderPartEstimations();
+        updateTotals();
+        updatePartCodesDisplay();
+        saveData();
+        
+        showToast('🔄 Estimasi telah dikosongkan!', 'info');
+    }
+}
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Manage Data Section Functions ---
+        let isManageDataSectionVisible = false;
+
+        function toggleManageDataSection() {
+            const estimationSection = document.getElementById('estimationSection');
+            const partsEstimationSection = document.getElementById('partsEstimationSection');
+            const serviceDatabaseSection = document.getElementById('serviceDatabaseSection');
+            const partDatabaseSection = document.getElementById('partDatabaseSection');
+            const manageDataSection = document.getElementById('manageDataSection');
+
+            isManageDataSectionVisible = !isManageDataSectionVisible;
+
+            if (isManageDataSectionVisible) {
+                estimationSection.style.display = 'none';
+                partsEstimationSection.style.display = 'none';
+                serviceDatabaseSection.style.display = 'none';
+                partDatabaseSection.style.display = 'none';
+                manageDataSection.style.display = 'block';
+                renderManageServiceTable();
+                renderManagePartTable();
+            } else {
+                estimationSection.style.display = 'block';
+                partsEstimationSection.style.display = 'block';
+                serviceDatabaseSection.style.display = 'block';
+                partDatabaseSection.style.display = 'block';
+                manageDataSection.style.display = 'none';
+                renderServiceDatabase();
+                renderPartDatabase();
+            }
+        }
+
+        // Service Management
+        function renderManageServiceTable() {
+            const tbody = document.getElementById('manageServiceTableBody');
+            tbody.innerHTML = '';
+
+            sortServiceDatabase(); // Ensure sorted before grouping
+
+            const groupedServices = serviceDatabase.reduce((acc, service) => {
+                (acc[service.group] = acc[service.group] || []).push(service);
+                return acc;
+            }, {});
+
+            const sortedGroups = Object.keys(groupedServices).sort();
+
+            for (const group of sortedGroups) {
+                const groupRow = document.createElement('tr');
+                groupRow.className = 'group-header';
+                groupRow.innerHTML = `<th colspan="4">${group}</th>`;
+                tbody.appendChild(groupRow);
+
+                // Services within the group are already sorted by ID due to sortServiceDatabase()
+                groupedServices[group].forEach(service => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="font-bold text-gray-800">${service.name}</td>
+                        <td>${formatRupiah(service.price)}</td>
+                        <td>${service.group}</td>
+                        <td>
+                            <button onclick="editService(${service.id})" class="btn-edit btn-animated">Edit</button>
+                            <button onclick="deleteServiceFromDb(${service.id})" class="btn-danger btn-animated">Hapus</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        function addOrUpdateService(event) {
+            event.preventDefault();
+            const idToEdit = document.getElementById('serviceIdToEdit').value;
+            const name = document.getElementById('serviceNameInput').value.trim();
+            const price = parseFloat(document.getElementById('servicePriceInput').value);
+            const group = document.getElementById('serviceGroupInput').value.trim();
+
+            if (!name) {
+                showToast('❌ Nama jasa tidak boleh kosong!', 'error');
+                return;
+            }
+            if (isNaN(price) || price < 0) {
+                showToast('❌ Harga jasa harus angka positif!', 'error');
+                return;
+            }
+            if (!group) {
+                showToast('❌ Grup jasa tidak boleh kosong!', 'error');
+                return;
+            }
+
+            if (idToEdit) {
+                const index = serviceDatabase.findIndex(s => s.id == idToEdit);
+                if (index !== -1) {
+                    serviceDatabase[index] = { ...serviceDatabase[index], name, price, group };
+                    showToast('✅ Jasa berhasil diperbarui!', 'success');
+                }
+            } else {
+                const newService = { id: nextServiceDbId++, name, price, group };
+                serviceDatabase.push(newService);
+                showToast('➕ Jasa baru berhasil ditambahkan!', 'success');
+            }
+            
+            sortServiceDatabase();
+            renderManageServiceTable();
+            resetServiceForm();
+            saveData();
+        }
+
+        function editService(id) {
+            const service = serviceDatabase.find(s => s.id === id);
+            if (service) {
+                document.getElementById('serviceIdToEdit').value = service.id;
+                document.getElementById('serviceNameInput').value = service.name;
+                document.getElementById('servicePriceInput').value = service.price;
+                document.getElementById('serviceGroupInput').value = service.group;
+                showToast('✏️ Data jasa dimuat untuk diedit.', 'info');
+            }
+        }
+
+        function deleteServiceFromDb(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus jasa ini dari database? Ini akan menghapusnya secara permanen.')) {
+                serviceDatabase = serviceDatabase.filter(s => s.id !== id);
+                renderManageServiceTable();
+                saveData();
+                showToast('🗑️ Jasa berhasil dihapus dari database.', 'info');
+            }
+        }
+
+        function resetServiceForm() {
+            document.getElementById('serviceForm').reset();
+            document.getElementById('serviceIdToEdit').value = '';
+        }
+
+        // Part Management
+        function renderManagePartTable() {
+            const tbody = document.getElementById('managePartTableBody');
+            tbody.innerHTML = '';
+
+            sortPartDatabase(); // Ensure sorted before grouping
+
+            const groupedParts = partDatabase.reduce((acc, part) => {
+                (acc[part.group] = acc[part.group] || []).push(part);
+                return acc;
+            }, {});
+
+            const sortedGroups = Object.keys(groupedParts).sort();
+
+            for (const group of sortedGroups) {
+                const groupRow = document.createElement('tr');
+                groupRow.className = 'group-header';
+                groupRow.innerHTML = `<th colspan="5">${group}</th>`;
+                tbody.appendChild(groupRow);
+
+                // Parts within the group are already sorted by ID due to sortPartDatabase()
+                groupedParts[group].forEach(part => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="font-bold text-gray-800">${part.name}</td>
+                        <td>${formatRupiah(part.price)}</td>
+                        <td>${part.group}</td>
+                        <td>${part.code || '-'}</td>
+                        <td>
+                            <button onclick="editPart(${part.id})" class="btn-edit btn-animated">Edit</button>
+                            <button onclick="deletePartFromDb(${part.id})" class="btn-danger btn-animated">Hapus</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        function addOrUpdatePart(event) {
+            event.preventDefault();
+            const idToEdit = document.getElementById('partIdToEdit').value;
+            const name = document.getElementById('partNameInput').value.trim();
+            const price = parseFloat(document.getElementById('partPriceInput').value);
+            const group = document.getElementById('partGroupInput').value.trim();
+            const code = document.getElementById('partCodeInput').value.trim();
+
+            if (!name) {
+                showToast('❌ Nama part tidak boleh kosong!', 'error');
+                return;
+            }
+            if (isNaN(price) || price < 0) {
+                showToast('❌ Harga part harus angka positif!', 'error');
+                return;
+            }
+            if (!group) {
+                showToast('❌ Grup part tidak boleh kosong!', 'error');
+                return;
+            }
+
+            if (idToEdit) {
+                const index = partDatabase.findIndex(p => p.id == idToEdit);
+                if (index !== -1) {
+                    partDatabase[index] = { ...partDatabase[index], name, price, group, code };
+                    showToast('✅ Part berhasil diperbarui!', 'success');
+                }
+            } else {
+                const newPart = { id: nextPartDbId++, name, price, group, code };
+                partDatabase.push(newPart);
+                showToast('➕ Part baru berhasil ditambahkan!', 'success');
+            }
+
+            sortPartDatabase();
+            renderManagePartTable();
+            resetPartForm();
+            saveData();
+        }
+
+        function editPart(id) {
+            const part = partDatabase.find(p => p.id === id);
+            if (part) {
+                document.getElementById('partIdToEdit').value = part.id;
+                document.getElementById('partNameInput').value = part.name;
+                document.getElementById('partPriceInput').value = part.price;
+                document.getElementById('partGroupInput').value = part.group;
+                document.getElementById('partCodeInput').value = part.code;
+                showToast('✏️ Data part dimuat untuk diedit.', 'info');
+            }
+        }
+
+        function deletePartFromDb(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus part ini dari database? Ini akan menghapusnya secara permanen.')) {
+                partDatabase = partDatabase.filter(p => p.id !== id);
+                renderManagePartTable();
+                saveData();
+                showToast('🗑️ Part berhasil dihapus dari database.', 'info');
+            }
+        }
+
+        function resetPartForm() {
+            document.getElementById('partForm').reset();
+            document.getElementById('partIdToEdit').value = '';
+        }
+
+        // --- Event Listeners and Initialization ---
+        window.addEventListener('scroll', () => {
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            if (window.scrollY > 300) {
+                scrollTopBtn.style.display = 'block';
+            } else {
+                scrollTopBtn.style.display = 'none';
+            }
+        });
+
+        document.getElementById('serviceForm').addEventListener('submit', addOrUpdateService);
+        document.getElementById('partForm').addEventListener('submit', addOrUpdatePart);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            renderServiceDatabase();
+            renderPartDatabase();
+            renderServiceEstimations();
+            renderPartEstimations();
+            updateTotals();
+            updatePartCodesDisplay();
+            
+            setTimeout(() => {
+                showToast('🚗 Selamat datang di Sistem Estimasi Servis Kendaraan!', 'info');
+            }, 1000);
+        });
+// --- 1. FUNGSI SIMPAN KE DATABASE ---
+function saveEstimasiKeDatabase() {
+    const nopol = prompt("Masukkan No Polisi:");
+    if (!nopol) return;
+
+    const id = Date.now().toString();
+    const data = {
+        id: id,
+        nopol: nopol.toUpperCase(),
+        tanggal: new Date().toISOString(),
+        jasa: serviceEstimations,
+        part: partEstimations,
+        total: document.getElementById('grandTotal').textContent
+    };
+
+    window.dbSet(window.dbRef(window.db, 'estimasi_tersimpan/' + id), data)
+        .then(() => {
+            showToast('Estimasi Berhasil Disimpan!', 'success');
+            muatRiwayat(); // Langsung perbarui tabel setelah simpan
+        });
+}
+
+// --- 2. FUNGSI CARI (FILTER) ---
+function filterRiwayat() {
+    var input = document.getElementById("cariNopol");
+    var filter = input.value.toUpperCase();
+    var tbody = document.getElementById("riwayatTableBody");
+    var tr = tbody.getElementsByTagName("tr");
+
+    for (var i = 0; i < tr.length; i++) {
+        // Kolom No Polisi ada di urutan kedua (index 1)
+        var td = tr[i].getElementsByTagName("td")[1];
+        if (td) {
+            var txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+
+// --- 3. FUNGSI MUAT DATA DARI DATABASE ---
+function muatRiwayat() {
+    if (window.db && window.dbRef) {
+        window.dbOnValue(window.dbRef(window.db, 'estimasi_tersimpan'), (snapshot) => {
+            const tbody = document.getElementById('riwayatTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = ''; 
+            
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                // Mengurutkan agar yang terbaru muncul di atas
+                Object.values(data).reverse().forEach(item => {
+                    const row = `<tr>
+                        <td>${new Date(item.tanggal).toLocaleDateString('id-ID')}</td>
+                        <td style="font-weight:bold;">${item.nopol}</td>
+                        <td><span class="price-tag">${item.total}</span></td>
+                        <td>
+                            <button onclick="bukaEstimasi('${item.id}')" class="btn-info btn-select">Buka & Edit</button>
+                        </td>
+                    </tr>`;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            }
+        });
+    }
+}
+
+// --- 4. FUNGSI BUKA & EDIT (YANG SEBELUMNYA HILANG) ---
+function bukaEstimasi(id) {
+    window.dbOnValue(window.dbRef(window.db, 'estimasi_tersimpan/' + id), (snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            // Masukkan data kembali ke tabel pengerjaan
+            serviceEstimations = data.jasa || [];
+            partEstimations = data.part || [];
+            
+            // Perbarui tampilan
+            renderServiceEstimations();
+            renderPartEstimations();
+            updateTotals();
+            updatePartCodesDisplay();
+            
+            // Kembali ke atas agar bisa langsung edit
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('Estimasi ' + data.nopol + ' berhasil dimuat!', 'info');
+        }
+    }, { onlyOnce: true });
+}
+
+// Jalankan muat data saat aplikasi dibuka
+muatRiwayat();
+    </script>
+</body>
+</html>
+```
