@@ -22,6 +22,12 @@
     window.dbRef = ref;
     window.dbSet = set;
     window.dbOnValue = onValue;
+
+    // OTOMATIS panggil riwayat saat database siap
+    console.log("Firebase Terhubung...");
+    if (typeof window.muatRiwayat === 'function') {
+        window.muatRiwayat();
+    }
 </script>
 <head>
     <meta charset="UTF-8" />
@@ -2281,7 +2287,7 @@ function updateTotals() {
 // --- 1. FUNGSI SIMPAN KE DATABASE ---
 function saveEstimasiKeDatabase() {
     const nopol = prompt("Masukkan No Polisi:");
-    if (!nopol) return;
+    if (!nopol || nopol.trim() === "") return;
 
     const id = Date.now().toString();
     const data = {
@@ -2296,59 +2302,73 @@ function saveEstimasiKeDatabase() {
     window.dbSet(window.dbRef(window.db, 'estimasi_tersimpan/' + id), data)
         .then(() => {
             showToast('Estimasi Berhasil Disimpan!', 'success');
-            muatRiwayat(); // Langsung perbarui tabel setelah simpan
+            // Data akan otomatis terupdate via onValue di muatRiwayat
+        })
+        .catch((error) => {
+            console.error("Gagal simpan:", error);
+            showToast('Gagal menyimpan ke database', 'error');
         });
 }
 
 // --- 2. FUNGSI CARI (FILTER) ---
 function filterRiwayat() {
-    var input = document.getElementById("cariNopol");
-    var filter = input.value.toUpperCase();
-    var tbody = document.getElementById("riwayatTableBody");
-    var tr = tbody.getElementsByTagName("tr");
+    const input = document.getElementById("cariNopol");
+    const filter = input.value.toUpperCase();
+    const tbody = document.getElementById("riwayatTableBody");
+    const tr = tbody.getElementsByTagName("tr");
 
-    for (var i = 0; i < tr.length; i++) {
-        // Kolom No Polisi ada di urutan kedua (index 1)
-        var td = tr[i].getElementsByTagName("td")[1];
+    for (let i = 0; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName("td")[1]; // Kolom No Polisi
         if (td) {
-            var txtValue = td.textContent || td.innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
+            const txtValue = td.textContent || td.innerText;
+            tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
         }
     }
 }
 
-// --- 3. FUNGSI MUAT DATA DARI DATABASE ---
-function muatRiwayat() {
+// --- 3. FUNGSI MUAT DATA DARI DATABASE (DIPERBAIKI) ---
+window.muatRiwayat = function() {
     if (window.db && window.dbRef) {
-        window.dbOnValue(window.dbRef(window.db, 'estimasi_tersimpan'), (snapshot) => {
+        const estimasiRef = window.dbRef(window.db, 'estimasi_tersimpan');
+        
+        // Menggunakan onValue agar tabel sinkron otomatis secara Realtime
+        window.dbOnValue(estimasiRef, (snapshot) => {
             const tbody = document.getElementById('riwayatTableBody');
             if (!tbody) return;
             tbody.innerHTML = ''; 
-            
+
             if (snapshot.exists()) {
-                const data = snapshot.val();
-                // Mengurutkan agar yang terbaru muncul di atas
-                Object.values(data).reverse().forEach(item => {
+                const rawData = snapshot.val();
+                // Ubah object ke array dan urutkan dari yang terbaru (berdasarkan tanggal)
+                const sortedData = Object.values(rawData).sort((a, b) => 
+                    new Date(b.tanggal) - new Date(a.tanggal)
+                );
+
+                sortedData.forEach(item => {
                     const row = `<tr>
                         <td>${new Date(item.tanggal).toLocaleDateString('id-ID')}</td>
-                        <td style="font-weight:bold;">${item.nopol}</td>
+                        <td style="font-weight:bold; color:#1e293b;">${item.nopol}</td>
                         <td><span class="price-tag">${item.total}</span></td>
                         <td>
-                            <button onclick="bukaEstimasi('${item.id}')" class="btn-info btn-select">Buka & Edit</button>
+                            <button onclick="bukaEstimasi('${item.id}')" class="btn-info btn-select">
+                                <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                Buka
+                            </button>
                         </td>
                     </tr>`;
                     tbody.insertAdjacentHTML('beforeend', row);
                 });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500 italic">Belum ada riwayat estimasi</td></tr>';
             }
         });
+    } else {
+        // Jika dipanggil tapi db belum siap, coba lagi dalam 1 detik
+        setTimeout(window.muatRiwayat, 1000);
     }
-}
+};
 
-// --- 4. FUNGSI BUKA & EDIT (YANG SEBELUMNYA HILANG) ---
+// --- 4. FUNGSI BUKA & EDIT ---
 function bukaEstimasi(id) {
     window.dbOnValue(window.dbRef(window.db, 'estimasi_tersimpan/' + id), (snapshot) => {
         if (snapshot.exists()) {
@@ -2357,21 +2377,20 @@ function bukaEstimasi(id) {
             serviceEstimations = data.jasa || [];
             partEstimations = data.part || [];
             
-            // Perbarui tampilan
+            // Perbarui tampilan UI
             renderServiceEstimations();
             renderPartEstimations();
             updateTotals();
             updatePartCodesDisplay();
             
-            // Kembali ke atas agar bisa langsung edit
             window.scrollTo({ top: 0, behavior: 'smooth' });
             showToast('Estimasi ' + data.nopol + ' berhasil dimuat!', 'info');
         }
     }, { onlyOnce: true });
 }
 
-// Jalankan muat data saat aplikasi dibuka
-muatRiwayat();
+// Jalankan saat pertama kali load script
+window.muatRiwayat();
     </script>
 </body>
 </html>
