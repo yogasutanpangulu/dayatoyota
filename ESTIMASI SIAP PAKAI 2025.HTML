@@ -1234,19 +1234,14 @@
 
         // Modified sortPartDatabase to rely on numeric prefixes in group names
         function sortPartDatabase() {
-            partDatabase.sort((a, b) => {
-                // 1. Urutkan berdasarkan Nama Part secara alfabet (A-Z)
-                // Ini akan membuat "TMO SYN 15W..." dan "TMO SYN 15W... DIESEL" berdekatan
-                let nameA = a.name.toUpperCase();
-                let nameB = b.name.toUpperCase();
-                
-                if (nameA < nameB) return -1;
-                if (nameA > nameB) return 1;
-                
-                // 2. Jika nama sama persis, urutkan berdasarkan ID
-                return a.id - b.id;
-            });
-        }
+    partDatabase.sort((a, b) => {
+        let namaA = a.name.toUpperCase();
+        let namaB = b.name.toUpperCase();
+        if (namaA < namaB) return -1;
+        if (namaA > namaB) return 1;
+        return a.id - b.id;
+    });
+}
 
         function loadData() {
     // Ambil data dari Firebase
@@ -2389,4 +2384,5 @@ window.muatRiwayat();
 </body>
 </html>
 ```
+
 
