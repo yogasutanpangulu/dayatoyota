@@ -1235,10 +1235,15 @@
         // Modified sortPartDatabase to rely on numeric prefixes in group names
         function sortPartDatabase() {
             partDatabase.sort((a, b) => {
-                // Sort by group name alphabetically (which now respects the numeric prefix)
-                if (a.group !== b.group) return a.group.localeCompare(b.group);
+                // 1. Urutkan berdasarkan Nama Part secara alfabet (A-Z)
+                // Ini akan membuat "TMO SYN 15W..." dan "TMO SYN 15W... DIESEL" berdekatan
+                let nameA = a.name.toUpperCase();
+                let nameB = b.name.toUpperCase();
                 
-                // Then sort by original ID within the same group
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                
+                // 2. Jika nama sama persis, urutkan berdasarkan ID
                 return a.id - b.id;
             });
         }
@@ -2384,3 +2389,4 @@ window.muatRiwayat();
 </body>
 </html>
 ```
+
