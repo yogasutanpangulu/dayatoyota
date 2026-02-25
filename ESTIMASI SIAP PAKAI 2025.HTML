@@ -1244,27 +1244,37 @@
 }
 
         function loadData() {
-    // Ambil data dari Firebase
+    // Ambil data Jasa dari Firebase
     const serviceRef = window.dbRef(window.db, 'master_data/services');
     window.dbOnValue(serviceRef, (snapshot) => {
         if (snapshot.exists()) {
             serviceDatabase = snapshot.val();
+            // PERBAIKAN: Update counter ID ke angka tertinggi + 1
+            const maxId = Math.max(...serviceDatabase.map(s => s.id), 0);
+            nextServiceDbId = maxId + 1;
+            
             renderServiceDatabase();
             renderManageServiceTable();
         } else {
-            // Jika di cloud kosong, pakai default
             serviceDatabase = [...defaultServiceDatabase];
+            nextServiceDbId = Math.max(...serviceDatabase.map(s => s.id)) + 1;
         }
     });
 
+    // Ambil data Part dari Firebase
     const partRef = window.dbRef(window.db, 'master_data/parts');
     window.dbOnValue(partRef, (snapshot) => {
         if (snapshot.exists()) {
             partDatabase = snapshot.val();
+            // PERBAIKAN: Update counter ID ke angka tertinggi + 1
+            const maxId = Math.max(...partDatabase.map(p => p.id), 0);
+            nextPartDbId = maxId + 1;
+
             renderPartDatabase();
             renderManagePartTable();
         } else {
             partDatabase = [...defaultPartDatabase];
+            nextPartDbId = Math.max(...partDatabase.map(p => p.id)) + 1;
         }
     });
 }
@@ -1293,12 +1303,16 @@
 }
 
 function addServiceFromDatabase(serviceId) {
-    const service = serviceDatabase.find(s => s.id === serviceId);
-    if (!service) return;
+    // Pastikan mencari dengan ID yang tepat (convert ke Number untuk jaga-jaga)
+    const service = serviceDatabase.find(s => Number(s.id) === Number(serviceId));
+    if (!service) {
+        showToast('❌ Data jasa tidak ditemukan!', 'error');
+        return;
+    }
 
     const estimation = {
-        id: serviceIdCounter++,
-        serviceId: service.id,
+        id: serviceIdCounter++, // Ini ID unik untuk baris tabel estimasi
+        serviceId: service.id,   // Ini ID referensi ke Master Data
         serviceName: service.name,
         price: service.price,
         qty: 1,
@@ -1309,9 +1323,9 @@ function addServiceFromDatabase(serviceId) {
 
     serviceEstimations.push(estimation);
     renderServiceEstimations();
-    updateTotals(); // Memperbarui Grand Total & Total Discount All
+    updateTotals();
     saveData();
-    showToast('⚙️ Jasa telah ditambahkan ke estimasi!', 'success');
+    showToast('⚙️ ' + service.name + ' ditambahkan!', 'success');
 }
 
 // --- FUNGSI UPDATE TOTAL (GABUNGAN DENGAN DISCOUNT ALL) ---
@@ -1434,28 +1448,31 @@ function updateTotals() {
 
         // --- Part Estimation Functions ---
         function addPartFromDatabase(partId) {
-            const part = partDatabase.find(p => p.id === partId);
-            if (!part) return;
+    const part = partDatabase.find(p => Number(p.id) === Number(partId));
+    if (!part) {
+        showToast('❌ Data part tidak ditemukan!', 'error');
+        return;
+    }
 
-            const estimation = {
-                id: partIdCounter++,
-                partId: part.id,
-                partName: part.name,
-                price: part.price,
-                qty: 1,
-                discount: 0,
-                total: part.price,
-                code: part.code,
-                isEditing: false // Set to false by default for database items
-            };
+    const estimation = {
+        id: partIdCounter++,
+        partId: part.id,
+        partName: part.name,
+        price: part.price,
+        qty: 1,
+        discount: 0,
+        total: part.price,
+        code: part.code,
+        isEditing: false
+    };
 
-            partEstimations.push(estimation);
-            renderPartEstimations();
-            updateTotals();
-            updatePartCodesDisplay();
-            saveData();
-            showToast('🔧 Part telah ditambahkan ke estimasi!', 'success');
-        }
+    partEstimations.push(estimation);
+    renderPartEstimations();
+    updateTotals();
+    updatePartCodesDisplay();
+    saveData();
+    showToast('🔧 ' + part.name + ' ditambahkan!', 'success');
+}
 
         function addManualPart() {
             const estimation = {
@@ -2068,42 +2085,38 @@ function updateTotals() {
         }
 
         function addOrUpdateService(event) {
-            event.preventDefault();
-            const idToEdit = document.getElementById('serviceIdToEdit').value;
-            const name = document.getElementById('serviceNameInput').value.trim();
-            const price = parseFloat(document.getElementById('servicePriceInput').value);
-            const group = document.getElementById('serviceGroupInput').value.trim();
+    event.preventDefault();
+    const idToEdit = document.getElementById('serviceIdToEdit').value;
+    const name = document.getElementById('serviceNameInput').value.trim();
+    const price = parseFloat(document.getElementById('servicePriceInput').value);
+    const group = document.getElementById('serviceGroupInput').value.trim();
 
-            if (!name) {
-                showToast('❌ Nama jasa tidak boleh kosong!', 'error');
-                return;
-            }
-            if (isNaN(price) || price < 0) {
-                showToast('❌ Harga jasa harus angka positif!', 'error');
-                return;
-            }
-            if (!group) {
-                showToast('❌ Grup jasa tidak boleh kosong!', 'error');
-                return;
-            }
+    // Tetap gunakan validasi agar data tidak rusak/kosong
+    if (!name || isNaN(price) || !group) {
+        showToast('❌ Mohon lengkapi semua data dengan benar!', 'error');
+        return;
+    }
 
-            if (idToEdit) {
-                const index = serviceDatabase.findIndex(s => s.id == idToEdit);
-                if (index !== -1) {
-                    serviceDatabase[index] = { ...serviceDatabase[index], name, price, group };
-                    showToast('✅ Jasa berhasil diperbarui!', 'success');
-                }
-            } else {
-                const newService = { id: nextServiceDbId++, name, price, group };
-                serviceDatabase.push(newService);
-                showToast('➕ Jasa baru berhasil ditambahkan!', 'success');
-            }
-            
-            sortServiceDatabase();
-            renderManageServiceTable();
-            resetServiceForm();
-            saveData();
+    if (idToEdit) {
+        // Mode Edit: Mencari berdasarkan ID Master Data
+        const index = serviceDatabase.findIndex(s => s.id == idToEdit);
+        if (index !== -1) {
+            serviceDatabase[index] = { ...serviceDatabase[index], name, price, group };
+            showToast('✅ Jasa berhasil diperbarui!', 'success');
         }
+    } else {
+        // Mode Tambah Baru: Menggunakan ID sinkron dari LoadData
+        const newService = { id: nextServiceDbId++, name, price, group };
+        serviceDatabase.push(newService);
+        showToast('➕ Jasa baru berhasil ditambahkan!', 'success');
+    }
+    
+    // Pastikan urutan dan tampilan diperbarui
+    sortServiceDatabase();
+    renderManageServiceTable(); // WAJIB ada agar tabel di layar update
+    resetServiceForm();
+    saveData(); // Kirim ke Firebase
+}
 
         function editService(id) {
             const service = serviceDatabase.find(s => s.id === id);
@@ -2169,43 +2182,35 @@ function updateTotals() {
         }
 
         function addOrUpdatePart(event) {
-            event.preventDefault();
-            const idToEdit = document.getElementById('partIdToEdit').value;
-            const name = document.getElementById('partNameInput').value.trim();
-            const price = parseFloat(document.getElementById('partPriceInput').value);
-            const group = document.getElementById('partGroupInput').value.trim();
-            const code = document.getElementById('partCodeInput').value.trim();
+    event.preventDefault();
+    const idToEdit = document.getElementById('partIdToEdit').value;
+    const name = document.getElementById('partNameInput').value.trim();
+    const price = parseFloat(document.getElementById('partPriceInput').value);
+    const group = document.getElementById('partGroupInput').value.trim();
+    const code = document.getElementById('partCodeInput').value.trim();
 
-            if (!name) {
-                showToast('❌ Nama part tidak boleh kosong!', 'error');
-                return;
-            }
-            if (isNaN(price) || price < 0) {
-                showToast('❌ Harga part harus angka positif!', 'error');
-                return;
-            }
-            if (!group) {
-                showToast('❌ Grup part tidak boleh kosong!', 'error');
-                return;
-            }
+    if (!name || isNaN(price) || !group) {
+        showToast('❌ Mohon lengkapi data part!', 'error');
+        return;
+    }
 
-            if (idToEdit) {
-                const index = partDatabase.findIndex(p => p.id == idToEdit);
-                if (index !== -1) {
-                    partDatabase[index] = { ...partDatabase[index], name, price, group, code };
-                    showToast('✅ Part berhasil diperbarui!', 'success');
-                }
-            } else {
-                const newPart = { id: nextPartDbId++, name, price, group, code };
-                partDatabase.push(newPart);
-                showToast('➕ Part baru berhasil ditambahkan!', 'success');
-            }
-
-            sortPartDatabase();
-            renderManagePartTable();
-            resetPartForm();
-            saveData();
+    if (idToEdit) {
+        const index = partDatabase.findIndex(p => p.id == idToEdit);
+        if (index !== -1) {
+            partDatabase[index] = { ...partDatabase[index], name, price, group, code };
         }
+    } else {
+        // Menggunakan counter yang sudah sinkron
+        const newPart = { id: nextPartDbId++, name, price, group, code };
+        partDatabase.push(newPart);
+    }
+
+    sortPartDatabase();
+    renderManagePartTable();
+    resetPartForm();
+    saveData();
+    showToast('✅ Database Part Diperbarui', 'success');
+}
 
         function editPart(id) {
             const part = partDatabase.find(p => p.id === id);
