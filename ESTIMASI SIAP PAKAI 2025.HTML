@@ -1303,16 +1303,17 @@
 }
 
 function addServiceFromDatabase(serviceId) {
-    // Pastikan mencari dengan ID yang tepat (convert ke Number untuk jaga-jaga)
+    // Memastikan pencarian ID menggunakan tipe data yang sama (Number)
     const service = serviceDatabase.find(s => Number(s.id) === Number(serviceId));
+    
     if (!service) {
         showToast('❌ Data jasa tidak ditemukan!', 'error');
         return;
     }
 
     const estimation = {
-        id: serviceIdCounter++, // Ini ID unik untuk baris tabel estimasi
-        serviceId: service.id,   // Ini ID referensi ke Master Data
+        id: serviceIdCounter++, // ID unik untuk baris tabel estimasi
+        serviceId: service.id,   // ID asli dari database
         serviceName: service.name,
         price: service.price,
         qty: 1,
@@ -1457,15 +1458,17 @@ function updateTotals() {
 
         // --- Part Estimation Functions ---
         function addPartFromDatabase(partId) {
+    // Memastikan pencarian ID menggunakan tipe data yang sama (Number)
     const part = partDatabase.find(p => Number(p.id) === Number(partId));
+    
     if (!part) {
         showToast('❌ Data part tidak ditemukan!', 'error');
         return;
     }
 
     const estimation = {
-        id: partIdCounter++,
-        partId: part.id,
+        id: partIdCounter++, // ID unik untuk baris tabel estimasi
+        partId: part.id,     // ID asli dari database
         partName: part.name,
         price: part.price,
         qty: 1,
