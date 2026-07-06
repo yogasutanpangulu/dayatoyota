@@ -209,6 +209,16 @@
     function render() {
         const tbody = document.getElementById('mainTable');
         if(!tbody) return;
+
+        // Ambil elemen yang sedang aktif sebelum di-render ulang
+        const activeEl = document.activeElement;
+        let activeId = null;
+        let selectionStart = 0;
+        if (activeEl && activeEl.tagName === 'INPUT') {
+            activeId = activeEl.id;
+            selectionStart = activeEl.selectionStart;
+        }
+
         tbody.innerHTML = '';
         let items = Object.values(allData);
 
@@ -233,6 +243,15 @@
             let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
             addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
             histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+        }
+
+        // Kembalikan fokus kursor ke input semula setelah tabel digambar ulang
+        if (activeId) {
+            const elToFocus = document.getElementById(activeId);
+            if (elToFocus) {
+                elToFocus.focus();
+                elToFocus.setSelectionRange(selectionStart, selectionStart);
+            }
         }
     }
 
@@ -259,10 +278,10 @@
         tr.className = rowColorClass;
         tr.innerHTML = `
             <td style="text-align:center; color:#94a3b8; font-weight:bold">${no}</td>
-            <td><input value="${x.nopol}" placeholder="Nopol" onpaste="handlePaste(event,'${x.id}')" oninput="updateData('${x.id}','nopol',this.value)"></td>
-            <td><input class="input-nama" value="${x.nama}" placeholder="Nama" oninput="updateData('${x.id}','nama',this.value)"></td>
-            <td><input value="${x.tel}" placeholder="08..." oninput="updateData('${x.id}','tel',this.value)"></td>
-            <td><input value="${x.tipe}" placeholder="Tipe" oninput="updateData('${x.id}','tipe',this.value)"></td>
+            <td><input id="input-nopol-${x.id}" value="${x.nopol}" placeholder="Nopol" onpaste="handlePaste(event,'${x.id}')" oninput="updateData('${x.id}','nopol',this.value)"></td>
+            <td><input id="input-nama-${x.id}" class="input-nama" value="${x.nama}" placeholder="Nama" oninput="updateData('${x.id}','nama',this.value)"></td>
+            <td><input id="input-tel-${x.id}" value="${x.tel}" placeholder="08..." oninput="updateData('${x.id}','tel',this.value)"></td>
+            <td><input id="input-tipe-${x.id}" value="${x.tipe}" placeholder="Tipe" oninput="updateData('${x.id}','tipe',this.value)"></td>
             <td><select onchange="updateData('${x.id}','janji',this.value)">${getTimeOptions(x.janji)}</select></td>
             <td><select onchange="updateData('${x.id}','selesai',this.value)">
                 <option value="" ${x.selesai===''?'selected':''}>-</option>
