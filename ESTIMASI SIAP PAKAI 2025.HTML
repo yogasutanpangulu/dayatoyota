@@ -798,61 +798,69 @@
 }
 
         function renderMasterDatabaseListView() {
-            const container = document.getElementById('masterDataViewContainer');
-            container.innerHTML = '';
+    const container = document.getElementById('masterDataViewContainer');
+    if (!container) return;
+    container.innerHTML = '';
 
-            if (masterDatabaseRecords.length === 0) {
-                container.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">Belum ada database master terunggah.</p>';
-                return;
+    if (masterDatabaseRecords.length === 0) {
+        container.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">Belum ada database master terunggah. Silakan klik tombol \'Upload Master CSV\' di atas.</p>';
+        return;
+    }
+
+    masterDatabaseRecords.forEach(record => {
+        // Ambil nilai aman jika property undefined
+        const recName = record.name || '';
+        const recCategory = record.category ? record.category.toLowerCase() : '';
+        const recPrice = record.price || 0;
+        const recCode = record.code || '-';
+
+        if (recName.startsWith(">>>") && recName.endsWith("<<<")) {
+            const separatorDiv = document.createElement('div');
+            separatorDiv.className = "w-full bg-slate-950 text-white font-extrabold text-center py-1.5 px-4 rounded-xl text-xs uppercase tracking-widest block my-2 shadow clear-both";
+            separatorDiv.textContent = recName.replace(/>/g, "").replace(/</g, "").trim();
+            container.appendChild(separatorDiv);
+        } else {
+            const itemRow = document.createElement('div');
+            itemRow.className = "flex items-center justify-between bg-white p-2 border border-gray-200 rounded-xl text-sm shadow-sm gap-4 hover:border-blue-400 transition";
+            
+            const leftSection = document.createElement('div');
+            leftSection.className = "flex items-center space-x-3 overflow-hidden w-full";
+            
+            const chooseBtn = document.createElement('button');
+            chooseBtn.className = "bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition shrink-0";
+            chooseBtn.textContent = "Pilih";
+            // Pastikan menggunakan record.id yang ditarik dari Firebase
+            chooseBtn.onclick = () => selectItemFromMasterData(record.id);
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className = "text-gray-800 font-medium truncate";
+            labelSpan.innerHTML = `${recName} — <strong class="text-blue-600">${formatRupiah(recPrice)}</strong>`;
+
+            leftSection.appendChild(chooseBtn);
+            leftSection.appendChild(labelSpan);
+
+            const rightSection = document.createElement('div');
+            rightSection.className = "flex items-center space-x-4 shrink-0";
+
+            if (recCategory === 'part' || recCategory === 'bahan') {
+                const codeDisplayTag = document.createElement('span');
+                codeDisplayTag.className = "bg-gray-100 font-mono text-xs text-gray-600 border border-gray-300 px-2 py-0.5 rounded-lg max-w-[120px] truncate";
+                codeDisplayTag.textContent = recCode;
+                rightSection.appendChild(codeDisplayTag);
             }
 
-            masterDatabaseRecords.forEach(record => {
-                if (record.name.startsWith(">>>") && record.name.endsWith("<<<")) {
-                    const separatorDiv = document.createElement('div');
-                    separatorDiv.className = "w-full bg-slate-950 text-white font-extrabold text-center py-1.5 px-4 rounded-xl text-xs uppercase tracking-widest block my-2 shadow clear-both";
-                    separatorDiv.textContent = record.name.replace(/>/g, "").replace(/</g, "").trim();
-                    container.appendChild(separatorDiv);
-                } else {
-                    const itemRow = document.createElement('div');
-                    itemRow.className = "flex items-center justify-between bg-white p-2 border border-gray-200 rounded-xl text-sm shadow-sm gap-4 hover:border-blue-400 transition";
-                    
-                    const leftSection = document.createElement('div');
-                    leftSection.className = "flex items-center space-x-3 overflow-hidden w-full";
-                    
-                    const chooseBtn = document.createElement('button');
-                    chooseBtn.className = "bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition shrink-0";
-                    chooseBtn.textContent = "Pilih";
-                    chooseBtn.onclick = () => selectItemFromMasterData(record.id);
+            const removeBtn = document.createElement('button');
+            removeBtn.className = "text-red-500 hover:text-red-700 font-bold px-1 transition text-sm";
+            removeBtn.innerHTML = "❌";
+            removeBtn.onclick = () => removeRecordFromMasterData(record.id);
 
-                    const labelSpan = document.createElement('span');
-                    labelSpan.className = "text-gray-800 font-medium truncate";
-                    labelSpan.innerHTML = `${record.name} — <strong class="text-blue-600">${formatRupiah(record.price)}</strong>`;
-
-                    leftSection.appendChild(chooseBtn);
-                    leftSection.appendChild(labelSpan);
-
-                    const rightSection = document.createElement('div');
-                    rightSection.className = "flex items-center space-x-4 shrink-0";
-
-                    if (record.category === 'part' || record.category === 'bahan') {
-                        const codeDisplayTag = document.createElement('span');
-                        codeDisplayTag.className = "bg-gray-100 font-mono text-xs text-gray-600 border border-gray-300 px-2 py-0.5 rounded-lg max-w-[120px] truncate";
-                        codeDisplayTag.textContent = record.code ? record.code : '-';
-                        rightSection.appendChild(codeDisplayTag);
-                    }
-
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = "text-red-500 hover:text-red-700 font-bold px-1 transition text-sm";
-                    removeBtn.innerHTML = "❌";
-                    removeBtn.onclick = () => removeRecordFromMasterData(record.id);
-
-                    rightSection.appendChild(removeBtn);
-                    itemRow.appendChild(leftSection);
-                    itemRow.appendChild(rightSection);
-                    container.appendChild(itemRow);
-                }
-            });
+            rightSection.appendChild(removeBtn);
+            itemRow.appendChild(leftSection);
+            itemRow.appendChild(rightSection);
+            container.appendChild(itemRow);
         }
+    });
+}
 
         function removeRecordFromMasterData(index) {
     if(confirm("Hapus item ini dari database master online?")) {
@@ -862,123 +870,140 @@
         }
     }
 }
-        // --- SISTEM PENYIMPANAN SINKRONISASI FIREBASE ONLINE ---
-        function saveCurrentEstimationToDB() {
-            const nopol = document.getElementById('nomorPolisiInput').value.trim();
-            if(nopol === "") {
-                showToast("Gagal menyimpan! Harap isi Nomor Polisi / Identitas Kendaraan.", "error");
-                document.getElementById('nomorPolisiInput').focus();
-                return;
-            }
 
-            // Sanitasi key nopol agar aman dari karakter terlarang Firebase (.#$[])
-            const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
+// --- FUNGSI PILIH DATA MASTER (DITAMBAHKAN DI SINI) ---
+function selectItemFromMasterData(id) {
+    const target = masterDatabaseRecords.find(r => r.id === id);
+    if (!target) return;
 
-            const payload = {
-                nopol: nopol.toUpperCase(),
-                date: new Date().toLocaleString('id-ID'),
-                services: serviceEstimations,
-                parts: partEstimations
-            };
+    const categoryValue = target.category ? target.category.toLowerCase() : '';
 
-            if (window.db && window.dbRef && window.dbSet) {
-                window.dbSet(window.dbRef(window.db, 'estimasi_records/' + cleanKey), payload)
-                    .then(() => {
-                        showToast(`Estimasi ${payload.nopol} Berhasil Disimpan ke Firebase Cloud!`, "success");
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                        showToast("Gagal menyinkronkan data online!", "error");
-                    });
-            } else {
-                showToast("Koneksi Firebase Cloud belum terinisialisasi!", "error");
-            }
-        }
+    if (categoryValue === 'jasa') {
+        addManualService(target);
+        showToast(`Jasa dipilih: ${target.name}`);
+    } else {
+        addManualPart(target);
+        showToast(`Part/Bahan dipilih: ${target.name}`);
+    }
+}
 
-        function renderSavedEstimationsHistory() {
-            const tbody = document.getElementById('historyTableBody');
-            if(!tbody) return;
-            tbody.innerHTML = '';
+// --- SISTEM PENYIMPANAN SINKRONISASI FIREBASE ONLINE ---
+function saveCurrentEstimationToDB() {
+    const nopol = document.getElementById('nomorPolisiInput').value.trim();
+    if(nopol === "") {
+        showToast("Gagal menyimpan! Harap isi Nomor Polisi / Identitas Kendaraan.", "error");
+        document.getElementById('nomorPolisiInput').focus();
+        return;
+    }
 
-            const searchKey = document.getElementById('searchHistoryInput').value.trim().toLowerCase();
-            let currentHistory = Object.values(allEstimasiData) || [];
+    // Sanitasi key nopol agar aman dari karakter terlarang Firebase (.#$[])
+    const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
 
-            if(searchKey !== "") {
-                currentHistory = currentHistory.filter(x => x.nopol && x.nopol.toLowerCase().includes(searchKey));
-            }
+    const payload = {
+        nopol: nopol.toUpperCase(),
+        date: new Date().toLocaleString('id-ID'),
+        services: serviceEstimations,
+        parts: partEstimations
+    };
 
-            if(currentHistory.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 text-xs py-4">Data riwayat online tidak ditemukan.</td></tr>`;
-                return;
-            }
-
-            currentHistory.forEach((item, index) => {
-                const sList = item.services || [];
-                const pList = item.parts || [];
-                
-                const totalBiayaJasa = sList.reduce((s, x) => s + (x.total || 0), 0);
-                const totalBiayaPart = pList.reduce((s, x) => s + (x.total || 0), 0);
-                const totalAkhir = totalBiayaJasa + totalBiayaPart;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="p-2 text-center font-bold text-gray-500">${index + 1}</td>
-                    <td class="p-2 font-bold text-slate-800">${item.nopol || '-'}</td>
-                    <td class="p-2 text-xs text-gray-600">${item.date || '-'}</td>
-                    <td class="p-2 font-semibold text-blue-700">${formatRupiah(totalAkhir)}</td>
-                    <td class="p-2 text-center">
-                        <button onclick="loadEstimationFromFirebase('${item.nopol}')" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3 py-1 rounded-lg transition">
-                            📂 Buka Kembali ke Estimasi
-                        </button>
-                        <button onclick="deleteEstimationFromFirebase('${item.nopol}')" class="text-red-500 hover:text-red-700 font-bold ml-3 text-xs">Hapus</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+    if (window.db && window.dbRef && window.dbSet) {
+        window.dbSet(window.dbRef(window.db, 'estimasi_records/' + cleanKey), payload)
+            .then(() => {
+                showToast(`Estimasi ${payload.nopol} Berhasil Disimpan ke Firebase Cloud!`, "success");
+            })
+            .catch((err) => {
+                console.error(err);
+                showToast("Gagal menyinkronkan data online!", "error");
             });
+    } else {
+        showToast("Koneksi Firebase Cloud belum terinisialisasi!", "error");
+    }
+}
+
+function renderSavedEstimationsHistory() {
+    const tbody = document.getElementById('historyTableBody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+
+    const searchKey = document.getElementById('searchHistoryInput').value.trim().toLowerCase();
+    let currentHistory = Object.values(allEstimasiData) || [];
+
+    if(searchKey !== "") {
+        currentHistory = currentHistory.filter(x => x.nopol && x.nopol.toLowerCase().includes(searchKey));
+    }
+
+    if(currentHistory.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 text-xs py-4">Data riwayat online tidak ditemukan.</td></tr>`;
+        return;
+    }
+
+    currentHistory.forEach((item, index) => {
+        const sList = item.services || [];
+        const pList = item.parts || [];
+        
+        const totalBiayaJasa = sList.reduce((s, x) => s + (x.total || 0), 0);
+        const totalBiayaPart = pList.reduce((s, x) => s + (x.total || 0), 0);
+        const totalAkhir = totalBiayaJasa + totalBiayaPart;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="p-2 text-center font-bold text-gray-500">${index + 1}</td>
+            <td class="p-2 font-bold text-slate-800">${item.nopol || '-'}</td>
+            <td class="p-2 text-xs text-gray-600">${item.date || '-'}</td>
+            <td class="p-2 font-semibold text-blue-700">${formatRupiah(totalAkhir)}</td>
+            <td class="p-2 text-center">
+                <button onclick="loadEstimationFromFirebase('${item.nopol}')" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3 py-1 rounded-lg transition">
+                    📂 Buka Kembali ke Estimasi
+                </button>
+                <button onclick="deleteEstimationFromFirebase('${item.nopol}')" class="text-red-500 hover:text-red-700 font-bold ml-3 text-xs">Hapus</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function loadEstimationFromFirebase(nopol) {
+    if(!nopol) return;
+    const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
+    const target = allEstimasiData[cleanKey];
+    if(!target) return;
+
+    if(confirm(`Apakah Anda ingin memuat data estimasi ${nopol} ke tabel atas? Data input berjalan akan ditimpa.`)) {
+        document.getElementById('nomorPolisiInput').value = target.nopol || '';
+        serviceEstimations = target.services || [];
+        partEstimations = target.parts || [];
+
+        if(serviceEstimations.length > 0) {
+            serviceIdCounter = Math.max(...serviceEstimations.map(o => o.id)) + 1;
+        } else { serviceIdCounter = 1; }
+        
+        if(partEstimations.length > 0) {
+            partIdCounter = Math.max(...partEstimations.map(o => o.id)) + 1;
+        } else { partIdCounter = 1; }
+
+        renderServices();
+        renderParts();
+        updateTotals();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast(`Sukses memuat berkas ${nopol}!`, "success");
+    }
+}
+
+function deleteEstimationFromFirebase(nopol) {
+    if(!nopol) return;
+    if(confirm(`Hapus berkas permanen ${nopol} dari database cloud online?`)) {
+        const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
+        if(window.db && window.dbRef && window.dbRemove) {
+            window.dbRemove(window.dbRef(window.db, 'estimasi_records/' + cleanKey))
+                .then(() => { 
+                    showToast("Berkas berhasil dihapus dari cloud.", "info"); 
+                })
+                .catch(() => { 
+                    showToast("Gagal menghapus berkas online!", "error"); 
+                });
         }
-
-        function loadEstimationFromFirebase(nopol) {
-            if(!nopol) return;
-            const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
-            const target = allEstimasiData[cleanKey];
-            if(!target) return;
-
-            if(confirm(`Apakah Anda ingin memuat data estimasi ${nopol} ke tabel atas? Data input berjalan akan ditimpa.`)) {
-                document.getElementById('nomorPolisiInput').value = target.nopol || '';
-                serviceEstimations = target.services || [];
-                partEstimations = target.parts || [];
-
-                if(serviceEstimations.length > 0) {
-                    serviceIdCounter = Math.max(...serviceEstimations.map(o => o.id)) + 1;
-                } else { serviceIdCounter = 1; }
-                
-                if(partEstimations.length > 0) {
-                    partIdCounter = Math.max(...partEstimations.map(o => o.id)) + 1;
-                } else { partIdCounter = 1; }
-
-                renderServices();
-                renderParts();
-                updateTotals();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                showToast(`Sukses memuat berkas ${nopol}!`, "success");
-            }
-        }
-
-        function deleteEstimationFromFirebase(nopol) {
-            if(!nopol) return;
-            if(confirm(`Hapus berkas permanen ${nopol} dari database cloud online?`)) {
-                const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
-                if(window.db && window.dbRef && window.dbRemove) {
-                    window.dbRemove(window.dbRef(window.db, 'estimasi_records/' + cleanKey))
-                        .then(() => { 
-                            showToast("Berkas berhasil dihapus dari cloud.", "info"); 
-                        })
-                        .catch(() => { 
-                            showToast("Gagal menghapus berkas online!", "error"); 
-                        });
-                }
-            }
-        }
+    }
+}
 
         window.onscroll = function() { scrollFunction() };
         function scrollFunction() {
