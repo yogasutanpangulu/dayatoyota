@@ -197,7 +197,7 @@
         });
     }
 
-    // --- FUNGSI BARU: SALIN DATA SEBARIS ---
+    // --- FUNGSI SALIN DATA (HANYA NOPOL, NAMA, TELPON) ---
     function copyRowData(id) {
         const data = allData[id];
         if (!data) return;
@@ -205,10 +205,9 @@
         const nopol = (data.nopol || "").trim();
         const nama = (data.nama || "").trim().toUpperCase();
         const tel = (data.tel || "").trim();
-        const tipe = (data.tipe || "").trim();
         
-        // Menggabungkan data dengan batas Tab agar kompatibel dengan sistem copy-paste
-        const textToCopy = `${nopol}\t${nama}\t${tel}\t${tipe}`;
+        // Digabungkan dengan format batas Tab agar rapi saat di-paste
+        const textToCopy = `${nopol}\t${nama}\t${tel}`;
         
         navigator.clipboard.writeText(textToCopy).then(() => {
             const btn = document.getElementById(`copy-btn-${id}`);
@@ -305,7 +304,7 @@
         tr.innerHTML = `
             <td style="text-align:center; color:#94a3b8; font-weight:bold; display: flex; align-items: center; justify-content: center; gap: 6px; border-bottom: none; height: 33px;">
                 <span>${no}</span>
-                <button id="copy-btn-${x.id}" class="copy-btn" onclick="copyRowData('${x.id}')" title="Salin Data Baris Ini">📋</button>
+                <button id="copy-btn-${x.id}" class="copy-btn" onclick="copyRowData('${x.id}')" title="Salin Nopol, Nama, Telp">📋</button>
             </td>
             <td><input id="input-nopol-${x.id}" value="${x.nopol}" placeholder="Nopol" onpaste="handlePaste(event,'${x.id}')" oninput="updateData('${x.id}','nopol',this.value)"></td>
             <td><input id="input-nama-${x.id}" class="input-nama" value="${x.nama}" placeholder="Nama" oninput="updateData('${x.id}','nama',this.value)"></td>
