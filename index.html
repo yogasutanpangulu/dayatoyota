@@ -60,6 +60,8 @@
         .input-nama { font-weight: bold; text-transform: uppercase; }
         .wa-btn { background: #22c55e; color: white; border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: bold; }
         .del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 18px; }
+        .copy-btn { background: none; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 4px; transition: 0.2s; }
+        .copy-btn:hover { background: #e2e8f0; color: #334155; }
         .download-box { background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; display: flex; gap: 10px; align-items: center; }
 
         /* Style khusus Jendela Estimasi */
@@ -95,7 +97,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:40px; text-align:center">No</th>
+                        <th style="width:75px; text-align:center">No</th>
                         <th style="width:115px">No Polisi</th>
                         <th>Nama Customer</th>
                         <th style="width:125px">No Telepon</th>
@@ -195,6 +197,30 @@
         });
     }
 
+    // --- FUNGSI BARU: SALIN DATA SEBARIS ---
+    function copyRowData(id) {
+        const data = allData[id];
+        if (!data) return;
+        
+        const nopol = (data.nopol || "").trim();
+        const nama = (data.nama || "").trim().toUpperCase();
+        const tel = (data.tel || "").trim();
+        const tipe = (data.tipe || "").trim();
+        
+        // Menggabungkan data dengan batas Tab agar kompatibel dengan sistem copy-paste
+        const textToCopy = `${nopol}\t${nama}\t${tel}\t${tipe}`;
+        
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const btn = document.getElementById(`copy-btn-${id}`);
+            if (btn) {
+                btn.innerText = "✅";
+                setTimeout(() => { btn.innerText = "📋"; }, 1000);
+            }
+        }).catch(err => {
+            alert('Gagal menyalin data');
+        });
+    }
+
     function getTimeOptions(selected) {
         let html = '<option value="">- Jam -</option>';
         for(let h=7; h<=17; h++) {
@@ -277,7 +303,10 @@
 
         tr.className = rowColorClass;
         tr.innerHTML = `
-            <td style="text-align:center; color:#94a3b8; font-weight:bold">${no}</td>
+            <td style="text-align:center; color:#94a3b8; font-weight:bold; display: flex; align-items: center; justify-content: center; gap: 6px; border-bottom: none; height: 33px;">
+                <span>${no}</span>
+                <button id="copy-btn-${x.id}" class="copy-btn" onclick="copyRowData('${x.id}')" title="Salin Data Baris Ini">📋</button>
+            </td>
             <td><input id="input-nopol-${x.id}" value="${x.nopol}" placeholder="Nopol" onpaste="handlePaste(event,'${x.id}')" oninput="updateData('${x.id}','nopol',this.value)"></td>
             <td><input id="input-nama-${x.id}" class="input-nama" value="${x.nama}" placeholder="Nama" oninput="updateData('${x.id}','nama',this.value)"></td>
             <td><input id="input-tel-${x.id}" value="${x.tel}" placeholder="08..." oninput="updateData('${x.id}','tel',this.value)"></td>
