@@ -741,52 +741,61 @@
         }
 
         function parseCSVToMasterDatabase(text) {
-            masterDatabaseRecords = [];
-            const rows = text.split(/\r?\n/);
-            if (rows.length <= 1) {
-                showToast("File CSV kosong atau tidak valid!", "error");
-                return;
-            }
+    let tempRecords = [];
+    const rows = text.split(/\r?\n/);
+    if (rows.length <= 1) {
+        showToast("File CSV kosong atau tidak valid!", "error");
+        return;
+    }
 
-            const firstLine = rows[0];
-            const delimiter = firstLine.includes(';') ? ';' : ',';
-            const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/["']/g, ""));
-            
-            const idxCat = headers.indexOf('category');
-            const idxName = headers.indexOf('name');
-            const idxPrice = headers.indexOf('price');
-            const idxCode = headers.indexOf('code');
+    const firstLine = rows[0];
+    const delimiter = firstLine.includes(';') ? ';' : ',';
+    const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/["']/g, ""));
+    
+    const idxCat = headers.indexOf('category');
+    const idxName = headers.indexOf('name');
+    const idxPrice = headers.indexOf('price');
+    const idxCode = headers.indexOf('code');
 
-            if (idxCat === -1 || idxName === -1 || idxPrice === -1 || idxCode === -1) {
-                showToast("Kolom CSV tidak cocok! Harus mengandung: category, name, price, code", "error");
-                return;
-            }
+    if (idxCat === -1 || idxName === -1 || idxPrice === -1 || idxCode === -1) {
+        showToast("Kolom CSV tidak cocok! Harus mengandung: category, name, price, code", "error");
+        return;
+    }
 
-            for (let i = 1; i < rows.length; i++) {
-                if (rows[i].trim() === '') continue;
-                let cols = rows[i].split(delimiter).map(c => c.trim().replace(/["']/g, ""));
-                if (cols.join("").trim() === "") continue;
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i].trim() === '') continue;
+        let cols = rows[i].split(delimiter).map(c => c.trim().replace(/["']/g, ""));
+        if (cols.join("").trim() === "") continue;
 
-                if (cols.length > Math.max(idxCat, idxName, idxPrice, idxCode)) {
-                    const categoryValue = cols[idxCat] ? cols[idxCat].trim().toLowerCase() : '';
-                    const nameValue = cols[idxName] ? cols[idxName].trim() : '';
-                    const priceValue = cols[idxPrice] ? parseFloat(cols[idxPrice].replace(/[^\d.]/g, "")) || 0 : 0;
-                    const codeValue = cols[idxCode] ? cols[idxCode].trim() : '';
+        if (cols.length > Math.max(idxCat, idxName, idxPrice, idxCode)) {
+            const categoryValue = cols[idxCat] ? cols[idxCat].trim().toLowerCase() : '';
+            const nameValue = cols[idxName] ? cols[idxName].trim() : '';
+            const priceValue = cols[idxPrice] ? parseFloat(cols[idxPrice].replace(/[^\d.]/g, "")) || 0 : 0;
+            const codeValue = cols[idxCode] ? cols[idxCode].trim() : '';
 
-                    if(nameValue === "") continue;
+            if(nameValue === "") continue;
 
-                    masterDatabaseRecords.push({
-                        id: 'MST_REC_' + i + '_' + Math.random().toString(36).substr(2, 4),
-                        category: categoryValue,
-                        name: nameValue,
-                        price: priceValue,
-                        code: codeValue
-                    });
-                }
-            }
-            showToast(`Berhasil memuat ${masterDatabaseRecords.length} data master!`, "success");
-            renderMasterDatabaseListView();
+            tempRecords.push({
+                category: categoryValue,
+                name: nameValue,
+                price: priceValue,
+                code: codeValue
+            });
         }
+    }
+
+    // SIMPAN KE FIREBASE SECARA OVERWRITE
+    if (window.db && window.dbRef && window.dbSet) {
+        showToast("Mengunggah data master ke Firebase...", "info");
+        window.dbSet(window.dbRef(window.db, 'master_database'), tempRecords)
+            .then(() => {
+                showToast(`Sukses! ${tempRecords.length} data master tersimpan di Cloud Firebase.`, "success");
+            })
+            .catch(() => {
+                showToast("Gagal mengunggah data master ke Cloud!", "error");
+            });
+    }
+}
 
         function renderMasterDatabaseListView() {
             const container = document.getElementById('masterDataViewContainer');
@@ -845,24 +854,14 @@
             });
         }
 
-        function removeRecordFromMasterData(id) {
-            masterDatabaseRecords = masterDatabaseRecords.filter(r => r.id !== id);
-            renderMasterDatabaseListView();
+        function removeRecordFromMasterData(index) {
+    if(confirm("Hapus item ini dari database master online?")) {
+        if(window.db && window.dbRef && window.dbRemove) {
+            window.dbRemove(window.dbRef(window.db, 'master_database/' + index))
+                .then(() => { showToast("Item terhapus dari cloud.", "info"); });
         }
-
-        function selectItemFromMasterData(id) {
-            const target = masterDatabaseRecords.find(r => r.id === id);
-            if (!target) return;
-
-            if (target.category === 'jasa') {
-                addManualService(target);
-                showToast(`Jasa dipilih: ${target.name}`);
-            } else {
-                addManualPart(target);
-                showToast(`Part/Bahan dipilih: ${target.name}`);
-            }
-        }
-
+    }
+}
         // --- SISTEM PENYIMPANAN SINKRONISASI FIREBASE ONLINE ---
         function saveCurrentEstimationToDB() {
             const nopol = document.getElementById('nomorPolisiInput').value.trim();
@@ -1163,20 +1162,36 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            addManualService();
-            addManualPart();
-            
-            // Pasang Listener Real-Time Firebase Database Cloud
-            setTimeout(() => {
-                if (window.db && window.dbRef && window.dbOnValue) {
-                    const estimasiRef = window.dbRef(window.db, 'estimasi_records');
-                    window.dbOnValue(estimasiRef, (snapshot) => {
-                        allEstimasiData = snapshot.val() || {};
-                        renderSavedEstimationsHistory();
-                    });
-                }
-            }, 1000); 
-        });
+    addManualService();
+    addManualPart();
+    
+    // Sinkronisasi data online
+    setTimeout(() => {
+        if (window.db && window.dbRef && window.dbOnValue) {
+            // 1. Ambil Data Riwayat Estimasi
+            const estimasiRef = window.dbRef(window.db, 'estimasi_records');
+            window.dbOnValue(estimasiRef, (snapshot) => {
+                allEstimasiData = snapshot.val() || {};
+                renderSavedEstimationsHistory();
+            });
+
+            // 2. Ambil Data Master Jasa & Part/Bahan CSV dari Cloud
+            const masterRef = window.dbRef(window.db, 'master_database');
+            window.dbOnValue(masterRef, (snapshot) => {
+                const rawData = snapshot.val();
+                // Konversi objek/array dari Firebase
+                masterDatabaseRecords = rawData ? Object.keys(rawData).map(key => ({
+                    id: key, 
+                    category: rawData[key].category,
+                    name: rawData[key].name,
+                    price: rawData[key].price,
+                    code: rawData[key].code
+                })) : [];
+                renderMasterDatabaseListView();
+            });
+        }
+    }, 1000); 
+});
     </script>
 </body>
 </html>
