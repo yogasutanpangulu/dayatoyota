@@ -1,1 +1,1182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Estimasi Servis - Daya Toyota Cakung</title>
+    <meta name="description" content="Aplikasi estimasi servis kendaraan profesional manual untuk bengkel otomotif Indonesia" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Sambungkan ke Firebase Online (Sama seperti index.html) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHLuzqXq_T6BGACGbDdheC7w8ZEQcsqCM",
+            authDomain: "penerimaan-service.firebaseapp.com",
+            databaseURL: "https://penerimaan-service-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "penerimaan-service",
+            storageBucket: "penerimaan-service.firebasestorage.app",
+            messagingSenderId: "238520546109",
+            appId: "1:238520546109:web:1e1b6c31288fd431290b54"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        // Daftarkan ke object window agar bisa diakses oleh fungsi script di bawah
+        window.db = db; 
+        window.dbRef = ref; 
+        window.dbSet = set; 
+        window.dbOnValue = onValue; 
+        window.dbUpdate = update; 
+        window.dbRemove = remove;
+    </script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .animated-bg {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .card-gradient {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .service-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .parts-gradient { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .grand-total-gradient {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border: 3px solid;
+            border-image: linear-gradient(135deg, #667eea, #764ba2) 1;
+        }
+        
+        .btn-animated {
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+        .btn-animated:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 12px 20px; border-radius: 12px; font-weight: 600; }
+        .btn-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 12px 20px; border-radius: 12px; font-weight: 600; }
+        .btn-danger { background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%); color: white; padding: 6px 12px; border-radius: 8px; font-weight: 600; }
+        .btn-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%); color: white; padding: 12px 20px; border-radius: 12px; font-weight: 600; }
+        
+        .input-field {
+            width: 100%; padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 14px; transition: all 0.3s ease; background: white; color: #333;
+        }
+        .input-field:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        
+        .card { border-radius: 20px; overflow: hidden; backdrop-filter: blur(10px); }
+        .table { width: 100%; border-collapse: collapse; border-radius: 12px; overflow: hidden; }
+        .table th { padding: 10px 15px; text-align: left; font-weight: 700; color: white; font-size: 13px; text-transform: uppercase; }
+        .table td { padding: 10px 15px; border-bottom: 1px solid #f1f5f9; background: white; font-size: 13px; }
+        
+        .service-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .parts-header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        
+        .price-tag { background: linear-gradient(135deg, #fee140 0%, #fa709a 100%); color: white; padding: 6px 12px; border-radius: 20px; font-weight: 700; }
+        .total-card { border-radius: 16px; padding: 16px; text-align: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+        
+        .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 16px 24px; border-radius: 12px; color: white; font-weight: 600; transform: translateX(400px); transition: all 0.3s ease; }
+        .toast.show { transform: translateX(0); }
+        .toast-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .toast-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .toast-error { background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%); }
+        .qty-input { width: 65px; text-align: center; }
+
+        #scrollToTopBtn {
+            position: fixed; bottom: 30px; right: 30px; z-index: 99; background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 22px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: none; align-items: center; justify-content: center; transition: all 0.3s ease;
+        }
+        #scrollToTopBtn:hover { transform: scale(1.1); }
+        
+        .download-clean-mode {
+            background: #ffffff !important;
+            padding: 30px !important;
+            color: #000000 !important;
+        }
+        .download-clean-mode .card {
+            box-shadow: none !important;
+            border: none !important;
+            background: #ffffff !important;
+            margin-bottom: 20px !important;
+            border-radius: 0px !important;
+        }
+        .download-clean-mode .card-header {
+            background: transparent !important;
+            border-bottom: 2px solid #000000 !important;
+            padding: 8px 0 !important;
+            color: #000000 !important;
+        }
+        .download-clean-mode .card-header h2 {
+            color: #000000 !important;
+            font-size: 16px !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .download-clean-mode .table {
+            border-radius: 0px !important;
+            border-collapse: collapse !important;
+        }
+        .download-clean-mode .table th {
+            background: transparent !important;
+            color: #000000 !important;
+            border-bottom: 1px solid #000000 !important;
+            padding: 8px 10px !important;
+            font-size: 12px !important;
+        }
+        .download-clean-mode .table td {
+            border-bottom: 1px solid #e2e8f0 !important;
+            background: transparent !important;
+            padding: 8px 10px !important;
+            color: #000000 !important;
+        }
+        .download-clean-mode .input-field {
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            font-weight: 500 !important;
+            color: #000000 !important;
+            pointer-events: none !important;
+        }
+        .download-clean-mode .price-tag {
+            background: transparent !important;
+            color: #000000 !important;
+            font-weight: 600 !important;
+            padding: 0 !important;
+        }
+        .download-clean-mode .total-card {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 4px 0 !important;
+            text-align: right !important;
+        }
+        .download-clean-mode .total-card * {
+            color: #000000 !important;
+        }
+        .download-clean-mode .grand-total-gradient {
+            background: transparent !important;
+            border: none !important;
+            border-top: 2px double #000000 !important;
+            border-bottom: 2px double #000000 !important;
+            border-radius: 0 !important;
+            padding: 12px 0 !important;
+        }
+        .download-clean-mode .grand-total-gradient #grandTotal {
+            font-size: 24px !important;
+        }
+
+        .download-clean-mode .no-download-clean {
+            display: none !important;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+            main { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+            
+            .card { box-shadow: none !important; border: none !important; background: white !important; border-radius: 0 !important; margin-bottom: 25px !important; }
+            .card-header { background: transparent !important; border-bottom: 2px solid #000000 !important; padding: 6px 0 !important; }
+            .card-header h2 { color: #000000 !important; font-size: 16px !important; text-transform: uppercase; }
+            
+            .table { border-collapse: collapse !important; border-radius: 0 !important; }
+            .table th { background: transparent !important; color: black !important; border-bottom: 1px solid black !important; padding: 6px 8px !important; font-size: 11px !important; }
+            .table td { border-bottom: 1px solid #cbd5e1 !important; background: white !important; padding: 6px 8px !important; }
+            
+            .input-field { border: none !important; padding: 0 !important; background: transparent !important; pointer-events: none; color: black !important; }
+            .price-tag { background: transparent !important; color: black !important; padding: 0 !important; font-weight: 600 !important; }
+            
+            .total-card { background: transparent !important; box-shadow: none !important; border: none !important; padding: 4px 0 !important; text-align: right !important; }
+            .total-card * { color: black !important; }
+            
+            .grand-total-gradient { border: none !important; border-top: 2px double black !important; border-bottom: 2px double black !important; background: transparent !important; border-radius: 0 !important; padding: 10px 0 !important; }
+            .grand-total-gradient #grandTotal { color: black !important; font-size: 22px !important; }
+            
+            .print-header-bengkel { display: block !important; margin-bottom: 25px; border-bottom: 1px solid #000; padding-bottom: 8px; text-align: left; }
+            .print-nopol-box { display: block !important; margin-bottom: 15px; font-size: 11pt; border-bottom: 1px dashed #ccc; padding-bottom: 5px; color: black !important; }
+            #cleanPrintFooter { display: block !important; margin-top: 40px; border-top: 1px solid #000; padding-top: 8px; font-size: 9pt; }
+        }
+    </style>
+</head>
+<body class="animated-bg">
+
+    <header class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg border-b border-white border-opacity-20 no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2 rounded-xl">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-xl font-bold text-white drop-shadow">Estimasi Servis Daya Toyota</h1>
+            </div>
+            <p class="text-white text-xs opacity-75">Sistem Manajemen Estimasi Servis Bengkel Indonesia</p>
+        </div>
+    </header>
+
+    <div id="cleanCaptureWrapper" class="bg-transparent">
+        <div id="cleanPrintHeader" class="print-header-bengkel hidden">
+            <div class="flex justify-between items-start border-b-2 border-black pb-3">
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-black">DAYA TOYOTA CAKUNG</h1>
+                    <p class="text-xs text-gray-700 mt-0.5">Jl. Raya Bekasi KM. 26, Cakung, Jakarta Timur</p>
+                    <p class="text-xs text-gray-600">Telp: (021) 12345678 | Layanan Bengkel Resmi Toyota</p>
+                </div>
+                <div class="text-right">
+                    <h2 class="text-xl font-bold tracking-widest text-gray-800">ESTIMASI BIAYA SERVIS</h2>
+                    <p class="text-xs text-gray-500 mt-1">Tanggal: <span id="printDate">-</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="printNopolArea" class="print-nopol-box hidden text-black font-mono text-sm my-3"></div>
+
+        <main id="estimationContentArea" class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            
+            <div class="card card-gradient">
+                <div class="card-header service-gradient p-4 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white">Jasa Servis</h2>
+                    <button onclick="addManualService()" class="bg-white text-purple-700 text-xs font-bold px-3 py-1.5 rounded-xl btn-animated no-print no-download-clean">
+                        + Tambah Jasa
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="service-header" style="width: 50px;">No.</th>
+                                    <th class="service-header no-print no-download-clean" style="width: 50px;">Salin</th>
+                                    <th class="service-header">Nama Jasa Servis</th>
+                                    <th class="service-header" style="width: 170px;">Harga (Rp)</th>
+                                    <th class="service-header" style="width: 80px;">QTY</th>
+                                    <th class="service-header" style="width: 170px;">Potongan / Disc</th>
+                                    <th class="service-header" style="width: 160px;">Total</th>
+                                    <th class="service-header no-print no-download-clean" style="width: 90px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="serviceTableBody"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" class="text-right font-bold text-gray-700 printable-colspan">Potongan Jasa:</td>
+                                    <td colspan="2" class="font-bold"><span id="totalDiscountService" class="text-sm text-red-600 font-bold">Rp 0</span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <div class="total-card service-gradient py-2 px-6">
+                            <span class="text-xs font-medium text-white block">Subtotal Jasa</span>
+                            <div class="text-xl font-black text-white" id="totalJasa">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-gradient">
+                <div class="card-header parts-gradient p-4 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white">Part / Bahan</h2>
+                    <button onclick="addManualPart()" class="bg-white text-pink-600 text-xs font-bold px-3 py-1.5 rounded-xl btn-animated no-print no-download-clean">
+                        + Tambah Part
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="parts-header" style="width: 50px;">No.</th>
+                                    <th class="parts-header no-print no-download-clean" style="width: 50px;">Salin</th>
+                                    <th class="parts-header">Nama Part / Bahan</th>
+                                    <th class="parts-header" style="width: 170px;">Harga (Rp)</th>
+                                    <th class="parts-header" style="width: 80px;">QTY</th>
+                                    <th class="parts-header" style="width: 170px;">Potongan / Disc</th>
+                                    <th class="parts-header" style="width: 160px;">Total</th>
+                                    <th class="parts-header no-print no-download-clean" style="width: 90px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partTableBody"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" class="text-right font-bold text-gray-700 printable-colspan">Potongan Part:</td>
+                                    <td colspan="2" class="font-bold"><span id="totalDiscountPart" class="text-sm text-red-600 font-bold">Rp 0</span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-slate-100 rounded-xl border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 no-print no-download-clean">
+                        <div class="w-full">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500 block">Kode Ringkas Part Terpilih:</span>
+                            <div id="accumulatedCodeOutput" class="font-mono text-sm font-bold text-slate-800 bg-white px-3 py-1.5 border border-gray-200 rounded-lg min-h-[36px] flex items-center mt-1">
+                                -
+                            </div>
+                        </div>
+                        <button onclick="copyAccumulatedPartCode()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs tracking-wider shrink-0 sm:mt-4">
+                            SALIN KODE RINGKAS
+                        </button>
+                    </div>
+
+                    <div id="printCodeSummaryArea" class="text-xs font-mono text-black mt-4 hidden no-print no-download-clean"></div>
+
+                    <div class="mt-6 space-y-4">
+                        <div class="flex justify-end">
+                            <div class="total-card parts-gradient py-2 px-6">
+                                <span class="text-xs font-medium text-white block">Subtotal Part</span>
+                                <div class="text-xl font-black text-white" id="totalPart">Rp 0</div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <div class="total-card grand-total-gradient w-full md:w-auto py-3 px-8">
+                                <div class="flex flex-col md:flex-row justify-around items-center space-y-2 md:space-y-0 md:space-x-12">
+                                    <div class="text-center md:text-left">
+                                        <span class="text-xs font-bold text-gray-500 uppercase">Total Potongan</span>
+                                        <div class="text-xl font-black text-red-600" id="totalDiscountAll">Rp 0</div>
+                                    </div>
+                                    <div class="text-center md:text-right">
+                                        <div class="flex items-center justify-center md:justify-end gap-2 mb-1">
+                                            <span class="text-sm font-bold text-gray-700 uppercase">Grand Total</span>
+                                            <button onclick="copyGrandTotalDirectly()" title="Salin Angka Grand Total" class="bg-slate-200 hover:bg-slate-300 px-2 py-0.5 rounded text-xs no-print no-download-clean">📋 Salin</button>
+                                        </div>
+                                        <div class="text-3xl font-black text-slate-900" id="grandTotal">Rp 0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-gradient border-2 border-slate-300 shadow-xl no-print no-download-clean">
+                <div class="p-4 bg-slate-50 border-b border-gray-200">
+                    <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block mb-1">Manajemen & Penyimpanan Berkas</span>
+                    <h3 class="text-lg font-bold text-gray-800">Finalisasi Dokumen Estimasi (Firebase Online)</h3>
+                </div>
+                <div class="p-6 flex flex-col lg:flex-row items-end justify-between gap-6">
+                    <div class="w-full lg:w-5/12">
+                        <label class="block text-sm font-bold text-gray-800 mb-2">Nomor Polisi / Identitas Teks Kendaraan:</label>
+                        <input type="text" id="nomorPolisiInput" class="input-field uppercase font-extrabold tracking-widest text-lg border-2 border-blue-400 placeholder-gray-400 p-3 h-12" placeholder="CONTOH: B 1234 ABC / AVANZA...">
+                    </div>
+                    
+                    <div class="w-full lg:w-7/12 flex flex-wrap items-center justify-start lg:justify-end gap-3">
+                        <button onclick="saveCurrentEstimationToDB()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-4 h-12 flex items-center justify-center text-sm shadow">
+                            💾 SIMPAN KE FIREBASE
+                        </button>
+
+                        <button onclick="handlePrint()" class="btn-success btn-animated h-12 flex items-center justify-center">
+                            🖨️ Cetak / Print
+                        </button>
+                        
+                        <div class="flex items-center border-2 border-amber-400 rounded-xl overflow-hidden h-12 bg-white">
+                            <select id="downloadTypeSelect" class="bg-transparent font-bold px-3 text-sm text-gray-700 h-full outline-none cursor-pointer">
+                                <option value="pdf" selected>Format PDF (.pdf)</option>
+                                <option value="image">Format Gambar (.png)</option>
+                                <option value="excel">Format Excel (.xlsx)</option>
+                            </select>
+                            <button onclick="triggerSelectedDownload()" class="btn-warning rounded-none h-full px-5 font-black flex items-center justify-center">
+                                UNDUH
+                            </button>
+                        </div>
+
+                        <button onclick="handleReset()" class="btn-secondary btn-animated h-12 flex items-center justify-center">
+                            🔄 Kosongkan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div id="cleanPrintFooter" class="text-center hidden font-sans text-black">
+            <p class="font-semibold text-xs">Terima kasih atas kepercayaan Anda menggunakan layanan Daya Toyota Cakung</p>
+            <p class="text-[10px] text-gray-600 mt-1">Estimasi ini bersifat rancangan biaya sementara dan berlaku selama 7 hari dari tanggal diterbitkan.</p>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 mb-6 no-print">
+        <div id="masterDatabaseCardPanel" class="card card-gradient">
+            <div class="card-header bg-gradient-to-r from-slate-700 to-slate-900 text-white flex justify-between items-center p-4">
+                <h2 class="text-md font-bold flex items-center gap-2 text-white">
+                    <span>📦</span> Database Master Jasa & Part/Bahan
+                </h2>
+                <label class="bg-white text-slate-900 font-bold px-4 py-1.5 rounded-xl text-xs btn-animated cursor-pointer shadow">
+                    Upload Master CSV
+                    <input type="file" id="csvFilePicker" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+                </label>
+            </div>
+            <div class="p-4">
+                <div class="border border-gray-200 rounded-xl bg-gray-50 p-3 space-y-2" id="masterDataViewContainer">
+                    <p class="text-center text-sm text-gray-400 py-6">Belum ada database master terunggah. Silakan klik tombol 'Upload Master CSV' di atas.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 mb-24 no-print">
+        <div class="card card-gradient border border-slate-300">
+            <div class="bg-slate-800 text-white p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h3 class="text-md font-bold text-white">📂 Tabel Riwayat Estimasi Tersimpan (Firebase Cloud)</h3>
+                    <p class="text-xs text-slate-300">Data tersimpan online dan tersinkronisasi antar-perangkat bengkel</p>
+                </div>
+                <div class="w-full sm:w-64">
+                    <input type="text" id="searchHistoryInput" oninput="renderSavedEstimationsHistory()" class="w-full px-3 py-1.5 text-xs text-slate-900 rounded-lg outline-none" placeholder="Cari No Polisi / Kendaraan...">
+                </div>
+            </div>
+            <div class="p-4 overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr class="bg-slate-600 text-white text-xs">
+                            <th class="p-2 text-slate-900">No.</th>
+                            <th class="p-2 text-slate-900">Nomor Polisi / Identitas</th>
+                            <th class="p-2 text-slate-900">Tanggal Simpan</th>
+                            <th class="p-2 text-slate-900">Total Biaya</th>
+                            <th class="p-2 text-slate-900 text-center">Aksi Pemuatan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-400 text-xs py-4">Menghubungkan ke server Firebase...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <button id="scrollToTopBtn" onclick="backToTopEstimation()" title="Kembali Ke Menu Estimasi" class="no-print">↑</button>
+
+    <script>
+        let serviceEstimations = [];
+        let partEstimations = [];
+        let masterDatabaseRecords = []; 
+        let allEstimasiData = {};
+        let serviceIdCounter = 1;
+        let partIdCounter = 1;
+
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat("id-ID", {
+                style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0,
+            }).format(amount);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type} show`;
+            toast.innerHTML = `<div>${message}</div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function copyTextDirectly(textVal) {
+            if(!textVal || textVal.trim() === "") {
+                showToast("Kolom nama kosong, tidak ada yang disalin!", "error");
+                return;
+            }
+            navigator.clipboard.writeText(textVal).then(() => {
+                showToast(`Berhasil menyalin: "${textVal}"`, "success");
+            });
+        }
+
+        function copyGrandTotalDirectly() {
+            const grandText = document.getElementById('grandTotal').textContent.replace(/[^\d]/g, '');
+            if(grandText === "0" || grandText === "") {
+                showToast("Nilai Grand Total kosong!", "error");
+                return;
+            }
+            navigator.clipboard.writeText(grandText).then(() => {
+                showToast(`Angka Grand Total [Rp ${grandText}] disalin!`, "success");
+            });
+        }
+
+        function addManualService(initialData = null) {
+            serviceEstimations.push({
+                id: serviceIdCounter++,
+                name: initialData ? initialData.name : '',
+                price: initialData ? initialData.price : 0,
+                qty: 1,
+                discType: 'percent', 
+                discount: 0,
+                total: initialData ? initialData.price : 0,
+                code: initialData ? initialData.code : ''
+            });
+            renderServices();
+            updateTotals();
+        }
+
+        function addManualPart(initialData = null) {
+            partEstimations.push({
+                id: partIdCounter++,
+                name: initialData ? initialData.name : '',
+                price: initialData ? initialData.price : 0,
+                qty: 1,
+                discType: 'percent',
+                discount: 0,
+                total: initialData ? initialData.price : 0,
+                code: initialData ? initialData.code : ''
+            });
+            renderParts();
+            updateTotals();
+        }
+
+        function updateServiceItem(id, field, value) {
+            const item = serviceEstimations.find(e => e.id === id);
+            if (!item) return;
+
+            if (field === 'name') item.name = value;
+            else if (field === 'discType') item.discType = value;
+            else {
+                let num = parseFloat(value) || 0;
+                if (num < 0) num = 0;
+                if (item.discType === 'percent' && field === 'discount' && num > 100) num = 100;
+                item[field] = num;
+            }
+            
+            const subtotal = item.price * item.qty;
+            let potongan = 0;
+            if (item.discType === 'percent') {
+                potongan = subtotal * (item.discount / 100);
+            } else {
+                potongan = item.discount;
+            }
+
+            item.total = Math.max(0, subtotal - potongan);
+            const element = document.getElementById(`total-service-${id}`);
+            if(element) element.textContent = formatRupiah(item.total);
+            updateTotals();
+        }
+
+        function updatePartItem(id, field, value) {
+            const item = partEstimations.find(e => e.id === id);
+            if (!item) return;
+
+            if (field === 'name') item.name = value;
+            else if (field === 'code') item.code = value;
+            else if (field === 'discType') item.discType = value;
+            else {
+                let num = parseFloat(value) || 0;
+                if (num < 0) num = 0;
+                if (item.discType === 'percent' && field === 'discount' && num > 100) num = 100;
+                item[field] = num;
+            }
+
+            const subtotal = item.price * item.qty;
+            let potongan = 0;
+            if (item.discType === 'percent') {
+                potongan = subtotal * (item.discount / 100);
+            } else {
+                potongan = item.discount;
+            }
+
+            item.total = Math.max(0, subtotal - potongan);
+            const element = document.getElementById(`total-part-${id}`);
+            if(element) element.textContent = formatRupiah(item.total);
+            updateTotals();
+        }
+
+        function deleteService(id) {
+            serviceEstimations = serviceEstimations.filter(e => e.id !== id);
+            renderServices();
+            updateTotals();
+        }
+
+        function deletePart(id) {
+            partEstimations = partEstimations.filter(e => e.id !== id);
+            renderParts();
+            updateTotals();
+        }
+
+        function updateTotals() {
+            const totalJasa = serviceEstimations.reduce((sum, item) => sum + item.total, 0);
+            const totalPart = partEstimations.reduce((sum, item) => sum + item.total, 0);
+            
+            let discJasa = 0;
+            serviceEstimations.forEach(item => {
+                const sub = item.price * item.qty;
+                discJasa += (item.discType === 'percent') ? (sub * item.discount / 100) : item.discount;
+            });
+
+            let discPart = 0;
+            partEstimations.forEach(item => {
+                const sub = item.price * item.qty;
+                discPart += (item.discType === 'percent') ? (sub * item.discount / 100) : item.discount;
+            });
+
+            document.getElementById('totalJasa').textContent = formatRupiah(totalJasa);
+            document.getElementById('totalPart').textContent = formatRupiah(totalPart);
+            document.getElementById('totalDiscountService').textContent = formatRupiah(discJasa);
+            document.getElementById('totalDiscountPart').textContent = formatRupiah(discPart);
+            document.getElementById('totalDiscountAll').textContent = formatRupiah(discJasa + discPart);
+            document.getElementById('grandTotal').textContent = formatRupiah(totalJasa + totalPart);
+
+            generateAccumulatedPartCodes();
+        }
+
+        function generateAccumulatedPartCodes() {
+            let partsCodeList = [];
+            partEstimations.forEach(item => {
+                if(item.code && item.code.trim() !== "") {
+                    partsCodeList.push(item.code.trim());
+                }
+            });
+            const outputString = partsCodeList.length > 0 ? partsCodeList.join(" ") : "-";
+            document.getElementById("accumulatedCodeOutput").textContent = outputString;
+            
+            const printCodeArea = document.getElementById("printCodeSummaryArea");
+            if(partsCodeList.length > 0) {
+                printCodeArea.textContent = "KODE INTERNAL PART: " + outputString;
+            } else {
+                printCodeArea.textContent = "";
+            }
+        }
+
+        function copyAccumulatedPartCode() {
+            const codeText = document.getElementById("accumulatedCodeOutput").textContent.trim();
+            if(codeText === "-") {
+                showToast("Tidak ada kode part ringkas untuk disalin!", "error");
+                return;
+            }
+            navigator.clipboard.writeText(codeText).then(() => {
+                showToast("Seluruh ringkasan kode part berhasil disalin!", "success");
+            });
+        }
+
+        function renderServices() {
+            const tbody = document.getElementById('serviceTableBody');
+            tbody.innerHTML = '';
+            serviceEstimations.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center font-bold text-gray-400">${index + 1}</td>
+                    <td class="no-print no-download-clean text-center">
+                        <button onclick="copyTextDirectly(document.getElementById('srv-name-field-${item.id}').value)" title="Salin Nama Jasa" class="bg-gray-100 hover:bg-gray-200 border px-2 py-1 rounded-lg text-xs">📋</button>
+                    </td>
+                    <td>
+                        <input type="text" id="srv-name-field-${item.id}" class="input-field font-bold" value="${item.name}" oninput="updateServiceItem(${item.id}, 'name', this.value)" placeholder="Ketik nama jasa...">
+                    </td>
+                    <td><input type="number" class="input-field" value="${item.price || ''}" oninput="updateServiceItem(${item.id}, 'price', this.value)" placeholder="0"></td>
+                    <td><input type="number" class="input-field qty-input" value="${item.qty}" min="1" oninput="updateServiceItem(${item.id}, 'qty', this.value)"></td>
+                    <td>
+                        <div class="flex items-center gap-1">
+                            <select class="border p-1 text-xs rounded-lg bg-gray-50 font-bold no-print no-download-clean" onchange="updateServiceItem(${item.id}, 'discType', this.value)">
+                                <option value="percent" ${item.discType === 'percent' ? 'selected' : ''}>%</option>
+                                <option value="rp" ${item.discType === 'rp' ? 'selected' : ''}>Rp</option>
+                            </select>
+                            <input type="number" class="input-field" value="${item.discount || ''}" oninput="updateServiceItem(${item.id}, 'discount', this.value)" placeholder="0">
+                        </div>
+                    </td>
+                    <td><span class="price-tag" id="total-service-${item.id}">${formatRupiah(item.total)}</span></td>
+                    <td class="no-print no-download-clean text-center"><button onclick="deleteService(${item.id})" class="btn-danger text-xs">Hapus</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderParts() {
+            const tbody = document.getElementById('partTableBody');
+            tbody.innerHTML = '';
+            partEstimations.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center font-bold text-gray-400">${index + 1}</td>
+                    <td class="no-print no-download-clean text-center">
+                        <button onclick="copyTextDirectly(document.getElementById('prt-name-field-${item.id}').value)" title="Salin Nama Part" class="bg-gray-100 hover:bg-gray-200 border px-2 py-1 rounded-lg text-xs">📋</button>
+                    </td>
+                    <td>
+                        <input type="text" id="prt-name-field-${item.id}" class="input-field font-bold" value="${item.name}" oninput="updatePartItem(${item.id}, 'name', this.value)" placeholder="Ketik nama part...">
+                    </td>
+                    <td><input type="number" class="input-field" value="${item.price || ''}" oninput="updatePartItem(${item.id}, 'price', this.value)" placeholder="0"></td>
+                    <td><input type="number" class="input-field qty-input" value="${item.qty}" min="1" oninput="updatePartItem(${item.id}, 'qty', this.value)"></td>
+                    <td>
+                        <div class="flex items-center gap-1">
+                            <select class="border p-1 text-xs rounded-lg bg-gray-50 font-bold no-print no-download-clean" onchange="updatePartItem(${item.id}, 'discType', this.value)">
+                                <option value="percent" ${item.discType === 'percent' ? 'selected' : ''}>%</option>
+                                <option value="rp" ${item.discType === 'rp' ? 'selected' : ''}>Rp</option>
+                            </select>
+                            <input type="number" class="input-field" value="${item.discount || ''}" oninput="updatePartItem(${item.id}, 'discount', this.value)" placeholder="0">
+                        </div>
+                    </td>
+                    <td><span class="price-tag" id="total-part-${item.id}">${formatRupiah(item.total)}</span></td>
+                    <td class="no-print no-download-clean text-center"><button onclick="deletePart(${item.id})" class="btn-danger text-xs">Hapus</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseCSVToMasterDatabase(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSVToMasterDatabase(text) {
+            masterDatabaseRecords = [];
+            const rows = text.split(/\r?\n/);
+            if (rows.length <= 1) {
+                showToast("File CSV kosong atau tidak valid!", "error");
+                return;
+            }
+
+            const firstLine = rows[0];
+            const delimiter = firstLine.includes(';') ? ';' : ',';
+            const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/["']/g, ""));
+            
+            const idxCat = headers.indexOf('category');
+            const idxName = headers.indexOf('name');
+            const idxPrice = headers.indexOf('price');
+            const idxCode = headers.indexOf('code');
+
+            if (idxCat === -1 || idxName === -1 || idxPrice === -1 || idxCode === -1) {
+                showToast("Kolom CSV tidak cocok! Harus mengandung: category, name, price, code", "error");
+                return;
+            }
+
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i].trim() === '') continue;
+                let cols = rows[i].split(delimiter).map(c => c.trim().replace(/["']/g, ""));
+                if (cols.join("").trim() === "") continue;
+
+                if (cols.length > Math.max(idxCat, idxName, idxPrice, idxCode)) {
+                    const categoryValue = cols[idxCat] ? cols[idxCat].trim().toLowerCase() : '';
+                    const nameValue = cols[idxName] ? cols[idxName].trim() : '';
+                    const priceValue = cols[idxPrice] ? parseFloat(cols[idxPrice].replace(/[^\d.]/g, "")) || 0 : 0;
+                    const codeValue = cols[idxCode] ? cols[idxCode].trim() : '';
+
+                    if(nameValue === "") continue;
+
+                    masterDatabaseRecords.push({
+                        id: 'MST_REC_' + i + '_' + Math.random().toString(36).substr(2, 4),
+                        category: categoryValue,
+                        name: nameValue,
+                        price: priceValue,
+                        code: codeValue
+                    });
+                }
+            }
+            showToast(`Berhasil memuat ${masterDatabaseRecords.length} data master!`, "success");
+            renderMasterDatabaseListView();
+        }
+
+        function renderMasterDatabaseListView() {
+            const container = document.getElementById('masterDataViewContainer');
+            container.innerHTML = '';
+
+            if (masterDatabaseRecords.length === 0) {
+                container.innerHTML = '<p class="text-center text-sm text-gray-400 py-6">Belum ada database master terunggah.</p>';
+                return;
+            }
+
+            masterDatabaseRecords.forEach(record => {
+                if (record.name.startsWith(">>>") && record.name.endsWith("<<<")) {
+                    const separatorDiv = document.createElement('div');
+                    separatorDiv.className = "w-full bg-slate-950 text-white font-extrabold text-center py-1.5 px-4 rounded-xl text-xs uppercase tracking-widest block my-2 shadow clear-both";
+                    separatorDiv.textContent = record.name.replace(/>/g, "").replace(/</g, "").trim();
+                    container.appendChild(separatorDiv);
+                } else {
+                    const itemRow = document.createElement('div');
+                    itemRow.className = "flex items-center justify-between bg-white p-2 border border-gray-200 rounded-xl text-sm shadow-sm gap-4 hover:border-blue-400 transition";
+                    
+                    const leftSection = document.createElement('div');
+                    leftSection.className = "flex items-center space-x-3 overflow-hidden w-full";
+                    
+                    const chooseBtn = document.createElement('button');
+                    chooseBtn.className = "bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition shrink-0";
+                    chooseBtn.textContent = "Pilih";
+                    chooseBtn.onclick = () => selectItemFromMasterData(record.id);
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = "text-gray-800 font-medium truncate";
+                    labelSpan.innerHTML = `${record.name} — <strong class="text-blue-600">${formatRupiah(record.price)}</strong>`;
+
+                    leftSection.appendChild(chooseBtn);
+                    leftSection.appendChild(labelSpan);
+
+                    const rightSection = document.createElement('div');
+                    rightSection.className = "flex items-center space-x-4 shrink-0";
+
+                    if (record.category === 'part' || record.category === 'bahan') {
+                        const codeDisplayTag = document.createElement('span');
+                        codeDisplayTag.className = "bg-gray-100 font-mono text-xs text-gray-600 border border-gray-300 px-2 py-0.5 rounded-lg max-w-[120px] truncate";
+                        codeDisplayTag.textContent = record.code ? record.code : '-';
+                        rightSection.appendChild(codeDisplayTag);
+                    }
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = "text-red-500 hover:text-red-700 font-bold px-1 transition text-sm";
+                    removeBtn.innerHTML = "❌";
+                    removeBtn.onclick = () => removeRecordFromMasterData(record.id);
+
+                    rightSection.appendChild(removeBtn);
+                    itemRow.appendChild(leftSection);
+                    itemRow.appendChild(rightSection);
+                    container.appendChild(itemRow);
+                }
+            });
+        }
+
+        function removeRecordFromMasterData(id) {
+            masterDatabaseRecords = masterDatabaseRecords.filter(r => r.id !== id);
+            renderMasterDatabaseListView();
+        }
+
+        function selectItemFromMasterData(id) {
+            const target = masterDatabaseRecords.find(r => r.id === id);
+            if (!target) return;
+
+            if (target.category === 'jasa') {
+                addManualService(target);
+                showToast(`Jasa dipilih: ${target.name}`);
+            } else {
+                addManualPart(target);
+                showToast(`Part/Bahan dipilih: ${target.name}`);
+            }
+        }
+
+        // --- SISTEM PENYIMPANAN SINKRONISASI FIREBASE ONLINE ---
+        function saveCurrentEstimationToDB() {
+            const nopol = document.getElementById('nomorPolisiInput').value.trim();
+            if(nopol === "") {
+                showToast("Gagal menyimpan! Harap isi Nomor Polisi / Identitas Kendaraan.", "error");
+                document.getElementById('nomorPolisiInput').focus();
+                return;
+            }
+
+            // Sanitasi key nopol agar aman dari karakter terlarang Firebase (.#$[])
+            const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
+
+            const payload = {
+                nopol: nopol.toUpperCase(),
+                date: new Date().toLocaleString('id-ID'),
+                services: serviceEstimations,
+                parts: partEstimations
+            };
+
+            if (window.db && window.dbRef && window.dbSet) {
+                window.dbSet(window.dbRef(window.db, 'estimasi_records/' + cleanKey), payload)
+                    .then(() => {
+                        showToast(`Estimasi ${payload.nopol} Berhasil Disimpan ke Firebase Cloud!`, "success");
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        showToast("Gagal menyinkronkan data online!", "error");
+                    });
+            } else {
+                showToast("Koneksi Firebase Cloud belum terinisialisasi!", "error");
+            }
+        }
+
+        function renderSavedEstimationsHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            const searchKey = document.getElementById('searchHistoryInput').value.trim().toLowerCase();
+            let currentHistory = Object.values(allEstimasiData) || [];
+
+            if(searchKey !== "") {
+                currentHistory = currentHistory.filter(x => x.nopol && x.nopol.toLowerCase().includes(searchKey));
+            }
+
+            if(currentHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 text-xs py-4">Data riwayat online tidak ditemukan.</td></tr>`;
+                return;
+            }
+
+            currentHistory.forEach((item, index) => {
+                const sList = item.services || [];
+                const pList = item.parts || [];
+                
+                const totalBiayaJasa = sList.reduce((s, x) => s + (x.total || 0), 0);
+                const totalBiayaPart = pList.reduce((s, x) => s + (x.total || 0), 0);
+                const totalAkhir = totalBiayaJasa + totalBiayaPart;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2 text-center font-bold text-gray-500">${index + 1}</td>
+                    <td class="p-2 font-bold text-slate-800">${item.nopol || '-'}</td>
+                    <td class="p-2 text-xs text-gray-600">${item.date || '-'}</td>
+                    <td class="p-2 font-semibold text-blue-700">${formatRupiah(totalAkhir)}</td>
+                    <td class="p-2 text-center">
+                        <button onclick="loadEstimationFromFirebase('${item.nopol}')" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3 py-1 rounded-lg transition">
+                            📂 Buka Kembali ke Estimasi
+                        </button>
+                        <button onclick="deleteEstimationFromFirebase('${item.nopol}')" class="text-red-500 hover:text-red-700 font-bold ml-3 text-xs">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function loadEstimationFromFirebase(nopol) {
+            if(!nopol) return;
+            const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
+            const target = allEstimasiData[cleanKey];
+            if(!target) return;
+
+            if(confirm(`Apakah Anda ingin memuat data estimasi ${nopol} ke tabel atas? Data input berjalan akan ditimpa.`)) {
+                document.getElementById('nomorPolisiInput').value = target.nopol || '';
+                serviceEstimations = target.services || [];
+                partEstimations = target.parts || [];
+
+                if(serviceEstimations.length > 0) {
+                    serviceIdCounter = Math.max(...serviceEstimations.map(o => o.id)) + 1;
+                } else { serviceIdCounter = 1; }
+                
+                if(partEstimations.length > 0) {
+                    partIdCounter = Math.max(...partEstimations.map(o => o.id)) + 1;
+                } else { partIdCounter = 1; }
+
+                renderServices();
+                renderParts();
+                updateTotals();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast(`Sukses memuat berkas ${nopol}!`, "success");
+            }
+        }
+
+        function deleteEstimationFromFirebase(nopol) {
+            if(!nopol) return;
+            if(confirm(`Hapus berkas permanen ${nopol} dari database cloud online?`)) {
+                const cleanKey = nopol.toUpperCase().replace(/[\.\#\$\[\]]/g, "-");
+                if(window.db && window.dbRef && window.dbRemove) {
+                    window.dbRemove(window.dbRef(window.db, 'estimasi_records/' + cleanKey))
+                        .then(() => { 
+                            showToast("Berkas berhasil dihapus dari cloud.", "info"); 
+                        })
+                        .catch(() => { 
+                            showToast("Gagal menghapus berkas online!", "error"); 
+                        });
+                }
+            }
+        }
+
+        window.onscroll = function() { scrollFunction() };
+        function scrollFunction() {
+            const btn = document.getElementById("scrollToTopBtn");
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                btn.style.display = "flex";
+            } else {
+                btn.style.display = "none";
+            }
+        }
+        function backToTopEstimation() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleReset() {
+            if (confirm('Apakah Anda yakin ingin mengosongkan tabel estimasi?')) {
+                serviceEstimations = [];
+                partEstimations = [];
+                document.getElementById('nomorPolisiInput').value = '';
+                renderServices();
+                renderParts();
+                updateTotals();
+                showToast('Form dikosongkan', 'info');
+            }
+        }
+
+        function handlePrint() {
+            const nopol = document.getElementById('nomorPolisiInput').value.trim();
+            if (nopol === "") {
+                showToast("Harap isi Nomor Polisi terlebih dahulu.", "error");
+                document.getElementById('nomorPolisiInput').focus();
+                return;
+            }
+            
+            document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '3'));
+            
+            document.getElementById('printDate').textContent = new Date().toLocaleDateString('id-ID', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            document.getElementById('printNopolArea').innerHTML = `NO. POLISI / IDENTITAS KENDARAAN: <span class="font-bold underline">${nopol.toUpperCase()}</span>`;
+            
+            window.print();
+            
+            setTimeout(() => {
+                document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '5'));
+            }, 1000);
+        }
+
+        function triggerSelectedDownload() {
+            const nopol = document.getElementById('nomorPolisiInput').value.trim();
+            if (nopol === "") {
+                showToast("Gagal! Masukkan Nomor Polisi terlebih dahulu.", "error");
+                document.getElementById('nomorPolisiInput').focus();
+                return;
+            }
+
+            const type = document.getElementById('downloadTypeSelect').value;
+            if(type === 'pdf') downloadAsPDF(nopol);
+            else if(type === 'image') downloadAsImage(nopol);
+            else if(type === 'excel') downloadAsExcel(nopol);
+        }
+
+        function downloadAsPDF(filename) {
+            showToast('Memproses dokumen PDF bersih...', 'info');
+            document.getElementById('printDate').textContent = new Date().toLocaleDateString('id-ID', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            document.getElementById('printNopolArea').innerHTML = `NO. POLISI / IDENTITAS KENDARAAN: <strong>${filename.toUpperCase()}</strong>`;
+
+            const wrapper = document.getElementById('cleanCaptureWrapper');
+            const hCetak = document.getElementById('cleanPrintHeader');
+            const nCetak = document.getElementById('printNopolArea');
+            const fCetak = document.getElementById('cleanPrintFooter');
+
+            document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '3'));
+
+            wrapper.classList.add('download-clean-mode');
+            hCetak.style.display = 'block';
+            nCetak.style.display = 'block';
+            fCetak.style.display = 'block';
+
+            html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = pdf.internal.pageSize.getWidth();
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save(`Estimasi_Servis_${filename.replace(/\s+/g, '_')}.pdf`);
+                
+                wrapper.classList.remove('download-clean-mode');
+                hCetak.style.display = 'none';
+                nCetak.style.display = 'none';
+                fCetak.style.display = 'none';
+                document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '5'));
+                showToast('Sukses mengunduh berkas PDF!', 'success');
+            }).catch(() => {
+                wrapper.classList.remove('download-clean-mode');
+                hCetak.style.display = 'none';
+                nCetak.style.display = 'none';
+                fCetak.style.display = 'none';
+                document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '5'));
+                showToast('Gagal memproses berkas PDF', 'error');
+            });
+        }
+
+        function downloadAsImage(filename) {
+            showToast('Mengekspor gambar estimasi nota bersih...', 'info');
+            document.getElementById('printDate').textContent = new Date().toLocaleDateString('id-ID', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            document.getElementById('printNopolArea').innerHTML = `NO. POLISI / IDENTITAS KENDARAAN: <strong>${filename.toUpperCase()}</strong>`;
+
+            const wrapper = document.getElementById('cleanCaptureWrapper');
+            const hCetak = document.getElementById('cleanPrintHeader');
+            const nCetak = document.getElementById('printNopolArea');
+            const fCetak = document.getElementById('cleanPrintFooter');
+
+            document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '3'));
+
+            wrapper.classList.add('download-clean-mode');
+            hCetak.style.display = 'block';
+            nCetak.style.display = 'block';
+            fCetak.style.display = 'block';
+
+            html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Estimasi_Servis_${filename.replace(/\s+/g, '_')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                wrapper.classList.remove('download-clean-mode');
+                hCetak.style.display = 'none';
+                nCetak.style.display = 'none';
+                fCetak.style.display = 'none';
+                document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '5'));
+                showToast('Sukses mengunduh berkas Gambar!', 'success');
+            }).catch(() => {
+                wrapper.classList.remove('download-clean-mode');
+                hCetak.style.display = 'none';
+                nCetak.style.display = 'none';
+                fCetak.style.display = 'none';
+                document.querySelectorAll('.printable-colspan').forEach(el => el.setAttribute('colspan', '5'));
+                showToast('Gagal membuat gambar', 'error');
+            });
+        }
+
+        function downloadAsExcel(filename) {
+            showToast('Membuat berkas Excel...', 'info');
+            let dataRows = [
+                ["DAYA TOYOTA CAKUNG - ESTIMASI BENGKEL RECOGNITION"],
+                ["IDENTITAS KENDARAAN / NOPOL", filename.toUpperCase()],
+                ["TANGGAL BERKAS", new Date().toLocaleDateString('id-ID')],
+                [],
+                ["KATEGORI", "DESKRIPSI ITEM", "HARGA SATUAN", "QTY", "TIPE POTONGAN", "NILAI POTONGAN", "TOTAL NET"]
+            ];
+
+            serviceEstimations.forEach(x => {
+                dataRows.push(["Jasa Servis", x.name, x.price, x.qty, x.discType === 'percent' ? 'Persen (%)' : 'Tunai (Rp)', x.discount, x.total]);
+            });
+
+            partEstimations.forEach(x => {
+                dataRows.push(["Part / Bahan", x.name, x.price, x.qty, x.discType === 'percent' ? 'Persen (%)' : 'Tunai (Rp)', x.discount, x.total]);
+            });
+
+            const totalJasa = serviceEstimations.reduce((sum, item) => sum + item.total, 0);
+            const totalPart = partEstimations.reduce((sum, item) => sum + item.total, 0);
+
+            dataRows.push([]);
+            dataRows.push(["", "", "", "", "SUBTOTAL AKUMULASI JASA", totalJasa]);
+            dataRows.push(["", "", "", "", "SUBTOTAL AKUMULASI PART", totalPart]);
+            dataRows.push(["", "", "", "", "GRAND TOTAL AKHIR ESTIMASI", (totalJasa + totalPart)]);
+            dataRows.push(["", "", "", "", "RINGKASAN KODE INTERNAL PART", document.getElementById("accumulatedCodeOutput").textContent]);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(dataRows);
+            XLSX.utils.book_append_sheet(wb, ws, "Estimasi Nota");
+            XLSX.writeFile(wb, `Estimasi_Servis_${filename.replace(/\s+/g, '_')}.xlsx`);
+            showToast('Sukses mengunduh file Excel!', 'success');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            addManualService();
+            addManualPart();
+            
+            // Pasang Listener Real-Time Firebase Database Cloud
+            setTimeout(() => {
+                if (window.db && window.dbRef && window.dbOnValue) {
+                    const estimasiRef = window.dbRef(window.db, 'estimasi_records');
+                    window.dbOnValue(estimasiRef, (snapshot) => {
+                        allEstimasiData = snapshot.val() || {};
+                        renderSavedEstimationsHistory();
+                    });
+                }
+            }, 1000); 
+        });
+    </script>
+</body>
+</html>
