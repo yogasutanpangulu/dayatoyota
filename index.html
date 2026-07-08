@@ -29,7 +29,7 @@
         body { margin: 0; background: var(--bg); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
         
         /* Layout Pembungkus */
-        #page-dashboard, #page-estimasi { width: 100%; height: 100vh; padding: 15px; box-sizing: border-box; overflow-y: auto; }
+        #page-dashboard, #page-estimasi, #page-estimasi-2 { width: 100%; height: 100vh; padding: 15px; box-sizing: border-box; overflow-y: auto; }
         
         header {
             background: linear-gradient(90deg, #1e293b, #334155);
@@ -41,6 +41,7 @@
         button { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; }
         .btn-add { background: var(--primary); color: white; }
         .btn-estimasi { background: #764ba2; color: white; } /* Warna ungu agar beda */
+        .btn-estimasi-2 { background: #d946ef; color: white; } /* Warna pink/magenta khusus Estimasi 2 */
         .btn-date { background: white; color: #334155; border: 1px solid #cbd5e1; }
         .btn-download { background: #10b981; color: white; }
         
@@ -78,7 +79,8 @@
     </header>
 
     <div class="actions">
-        <button class="btn-estimasi" onclick="showPage('estimasi')">📊 BUKA ESTIMASI</button>
+        <button class="btn-estimasi" onclick="showPage('estimasi')">📊 BUKA ESTIMASI 2025</button>
+        <button class="btn-estimasi-2" onclick="showPage('estimasi-2')">🚀 BUKA ESTIMASI 2</button>
         <button class="btn-add" onclick="addNewRow()">+ TAMBAH DATA</button>
         <div style="flex-grow: 1"></div>
         <div class="download-box">
@@ -118,7 +120,7 @@
 
 <div id="page-estimasi" style="display: none;">
     <header>
-        <h2 style="margin:0; font-size: 18px;">📊 Menu Estimasi Servis</h2>
+        <h2 style="margin:0; font-size: 18px;">📊 Menu Estimasi Servis 2025</h2>
         <button class="btn-date" onclick="showPage('dashboard')">⬅️ KEMBALI KE PENERIMAAN</button>
     </header>
     
@@ -127,15 +129,32 @@
     </div>
 </div>
 
+<div id="page-estimasi-2" style="display: none;">
+    <header>
+        <h2 style="margin:0; font-size: 18px;">🚀 Menu Estimasi Servis 2 (Upload 10)</h2>
+        <button class="btn-date" onclick="showPage('dashboard')">⬅️ KEMBALI KE PENERIMAAN</button>
+    </header>
+    
+    <div id="iframe-container">
+        <iframe src="estimasiupload10.html"></iframe>
+    </div>
+</div>
+
 <script>
-    // --- FUNGSI PINDAH HALAMAN ---
+    // --- FUNGSI PINDAH HALAMAN (Mendukung 3 Halaman Lengkap) ---
     function showPage(page) {
         if(page === 'estimasi') {
             document.getElementById('page-dashboard').style.display = 'none';
             document.getElementById('page-estimasi').style.display = 'block';
+            document.getElementById('page-estimasi-2').style.display = 'none';
+        } else if(page === 'estimasi-2') {
+            document.getElementById('page-dashboard').style.display = 'none';
+            document.getElementById('page-estimasi').style.display = 'none';
+            document.getElementById('page-estimasi-2').style.display = 'block';
         } else {
             document.getElementById('page-dashboard').style.display = 'block';
             document.getElementById('page-estimasi').style.display = 'none';
+            document.getElementById('page-estimasi-2').style.display = 'none';
         }
     }
 
@@ -197,7 +216,6 @@
         });
     }
 
-    // --- FUNGSI SALIN DATA (HANYA NOPOL, NAMA, TELPON) ---
     function copyRowData(id) {
         const data = allData[id];
         if (!data) return;
@@ -206,7 +224,6 @@
         const nama = (data.nama || "").trim().toUpperCase();
         const tel = (data.tel || "").trim();
         
-        // Digabungkan dengan format batas Tab agar rapi saat di-paste
         const textToCopy = `${nopol}\t${nama}\t${tel}`;
         
         navigator.clipboard.writeText(textToCopy).then(() => {
@@ -235,7 +252,6 @@
         const tbody = document.getElementById('mainTable');
         if(!tbody) return;
 
-        // Ambil elemen yang sedang aktif sebelum di-render ulang
         const activeEl = document.activeElement;
         let activeId = null;
         let selectionStart = 0;
@@ -270,7 +286,6 @@
             histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
         }
 
-        // Kembalikan fokus kursor ke input semula setelah tabel digambar ulang
         if (activeId) {
             const elToFocus = document.getElementById(activeId);
             if (elToFocus) {
@@ -363,7 +378,7 @@
         if(!d.tel) return alert('No HP kosong');
         const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
         const namaBold = d.nama.toUpperCase();
-        const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih 🙏🏻`;
+        const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih 🙏_`;
         window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
