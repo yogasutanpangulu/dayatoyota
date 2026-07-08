@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Estimasi Service Bengkel</title>
     
-    <!-- Modul Firebase Realtime Database Sinkron Cloud -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -23,7 +22,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
-        // Diekspos ke window object agar fungsi simpan cloud internal dapat membaca langsung
         window.db = db; window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbUpdate = update; window.dbRemove = remove;
     </script>
 
@@ -155,6 +153,15 @@
         .disc-input { text-align: right; width: 55px; color: #d32f2f; }
         .disc-type-select { width: 45px; border: none; background: transparent; cursor: pointer; font-size: 8.5pt; color: #d32f2f; }
         
+        /* Style Pemisah Kategori Hitam Tebal di Dropdown */
+        select.item-select option.opt-group-header {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            letter-spacing: 1px;
+        }
+
         .grand-total-table {
             width: 60%;
             float: right;
@@ -233,7 +240,6 @@
         .btn-reset { background: #ff9800; color: white; border: none; }
         .btn-reset:hover { background: #e68a00; }
 
-        /* Panel Penyimpanan & Panel Master Data */
         .storage-panel, .master-panel {
             margin-top: 25px;
             background: #f9f9f9;
@@ -269,7 +275,6 @@
         .btn-load { color: #2196F3; border-color: #2196F3; background: transparent; }
         .btn-delete { color: #f44336; border-color: #f44336; background: transparent; }
 
-        /* Form Master Data & Import */
         .master-form {
             display: flex;
             gap: 10px;
@@ -331,7 +336,6 @@
             padding: 6px 10px !important;
         }
 
-        /* Toast Notification & Blok Kompilasi Kode */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -453,7 +457,7 @@
                 <td>
                     <div class="input-with-copy">
                         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <select class="item-select" data-type="jasa" onchange="autoFillPrice(this)"></select>
+                        <input type="text" class="item-name" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
                     </div>
                 </td>
                 <td>
@@ -482,7 +486,7 @@
     </table>
 
     <div class="table-title">
-        <span>KOLOM LAIN-LAIN</span>
+        <span></span>
         <button class="btn btn-add" onclick="addRow('table-lain')">+ Tambah Kolom</button>
     </div>
     <table id="table-lain">
@@ -490,7 +494,7 @@
             <tr>
                 <th style="width: 8%;" class="text-center">QTY</th>
                 <th style="width: 22%;">HARGA / PCS</th>
-                <th style="width: 32%;">KETERANGAN</th>
+                <th style="width: 32%;"></th>
                 <th style="width: 16%; color: #d32f2f;">DISCOUNT</th>
                 <th style="width: 17%;">TOTAL</th>
                 <th style="width: 5%;" class="text-center">Aksi</th>
@@ -607,7 +611,7 @@
 
     <div class="master-panel">
         <div class="master-header">
-            <h3 style="margin:0; font-size:11pt; color: #333;">⚙️ Panel Master Database (Jasa & Part)</h3>
+            <h3 style="margin:0; font-size:11pt; color: #333;">⚙️ Panel Master Database (Jasa & OPL / Lain)</h3>
             <input type="text" id="db-search-input" class="search-box" placeholder="Cari di katalog database..." oninput="filterMasterTable()" style="width: 220px;">
         </div>
         
@@ -615,7 +619,7 @@
             <div style="width: 100%; display: flex; gap: 10px; margin-bottom: 5px;">
                 <select id="db-category" style="width: 130px;">
                     <option value="jasa">Kategori: JASA</option>
-                    <option value="lain">Kategori: LAIN-LAIN</option>
+                    <option value="lain">Kategori: OPL / LAIN</option>
                     <option value="part">Kategori: PART / BAHAN</option>
                 </select>
                 <input type="text" id="db-name" placeholder="Nama Barang / Jasa..." style="flex:2;">
@@ -633,7 +637,7 @@
         </div>
 
         <div style="font-size: 8.5pt; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 6px; border-radius: 4px;">
-            💡 <strong>Petunjuk Part:</strong> Klik langsung pada baris tabel master bertanda <strong>[Klik untuk Pilih]</strong> di bawah untuk memilih part tanpa memindahkan layar kerja Anda! Baris hitam tebal berfungsi sebagai pembatas grup.
+            💡 <strong>Petunjuk Jasa & Part:</strong> Klik langsung pada baris tabel master bertanda <strong>[Klik untuk Pilih]</strong> di bawah untuk memilih part/jasa tanpa memindahkan layar kerja Anda! Baris hitam tebal berfungsi sebagai pembatas grup.
         </div>
 
         <table class="master-table">
@@ -661,7 +665,6 @@
     ]; 
     
     let masterDatabase = [];
-    let cloudMasterObject = {}; // Menyimpan cadangan data sebagai objek bersih pasangan KEY-VALUE
 
     function syncMasterDatabase() {
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
@@ -707,7 +710,7 @@
         let subtotalPart = 0;
         let discTotalPart = 0;
 
-        // Perhitungan Tabel Jasa
+        // Perhitungan Tabel Jasa (Menggunakan input text)
         document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -811,13 +814,15 @@
         const newRow = document.createElement('tr');
         let inputTdHtml = '';
         
-        if (type === 'part') {
+        if (type === 'part' || type === 'jasa') {
+            // Poin 1: Jasa & Part diketik manual menggunakan input-text
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
                     <input type="text" class="item-name" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
                 </div>`;
         } else {
+            // Poin 2: Kolom OPL/Lain-lain tetap menggunakan struktur select dropdown
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
@@ -856,7 +861,7 @@
             tbody.appendChild(newRow);
         }
         
-        if (type !== 'part') updateAllDropdowns();
+        if (type === 'lain') updateAllDropdowns();
         calculateAll();
     }
 
@@ -868,13 +873,19 @@
 
     function autoFillPrice(selectElement) {
         const selectedOption = selectElement.options[selectElement.selectedIndex];
-        const price = selectedOption.getAttribute('data-price') || 0;
         
+        // Proteksi agar judul separator grup disabled tidak bisa diklik pengisi harga
+        if(selectedOption.classList.contains('opt-group-header')) {
+            selectElement.value = "";
+            return;
+        }
+
+        const price = selectedOption.getAttribute('data-price') || 0;
         const row = selectElement.closest('tr');
         const priceInput = row.querySelector('.price-input');
         
         if (selectElement.value === "CUSTOM") {
-            const customName = prompt("Masukkan nama Jasa / Keterangan manual:");
+            const customName = prompt("Masukkan nama Pekerjaan OPL manual:");
             if (customName) {
                 const newOpt = document.createElement('option');
                 newOpt.value = customName;
@@ -894,11 +905,13 @@
         calculateAll();
     }
 
+    // Poin 1: Mendukung Click-to-Pick untuk Kategori Jasa & Part Suku Cadang masal secara rapi
     function handleMasterRowClick(name, price, type) {
-        if (type !== 'part') return;
+        if (type !== 'part' && type !== 'jasa') return;
         if (name.startsWith('>>>')) return;
 
-        const table = document.getElementById('table-part');
+        let tableId = type === 'jasa' ? 'table-jasa' : 'table-part';
+        const table = document.getElementById(tableId);
         const rows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
         let targetRow = null;
 
@@ -911,7 +924,7 @@
         }
 
         if (!targetRow) {
-            addRow('table-part');
+            addRow(tableId);
             const updatedRows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
             targetRow = updatedRows[updatedRows.length - 1];
         }
@@ -922,23 +935,27 @@
         targetRow.style.backgroundColor = "#e8f5e9";
         setTimeout(() => targetRow.style.backgroundColor = "transparent", 800);
 
-        showToast(`✅ Part Terpilih: ${name}`);
+        showToast(`✅ ${type.toUpperCase()} Terpilih: ${name}`);
         calculateAll();
     }
 
+    // Poin 3: Modifikasi render dropdown Lain-Lain agar mendeteksi tulisan penanda grup >>>PEMISAH<<<
     function updateAllDropdowns() {
-        const selects = document.querySelectorAll('.item-select');
+        const selects = document.querySelectorAll('.item-select[data-type="lain"]');
         selects.forEach(select => {
-            const currentType = select.getAttribute('data-type');
             const currentValue = select.value; 
             
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten --</option>';
-            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
+            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Manual]</option>';
             
-            const filteredData = masterDatabase.filter(item => item.type === currentType);
-            filteredData.forEach(item => {
-                if (!item.name.startsWith('>>>')) {
-                    optionsHtml += `<option value="${item.name}" data-price="${item.price}">${item.name}</option>`;
+            masterDatabase.forEach(item => {
+                if (item.type === 'lain') {
+                    if (item.name.startsWith('>>>') && item.name.endsWith('<<<')) {
+                        // Aturan Poin 3: Ditandai pemisah teks berwarna hitam gelap tebal di list dropdown
+                        optionsHtml += `<option value="" disabled class="opt-group-header">${item.name}</option>`;
+                    } else {
+                        optionsHtml += `<option value="${item.name}" data-price="${item.price}">${item.name}</option>`;
+                    }
                 }
             });
             
@@ -990,12 +1007,17 @@
             tbody.appendChild(tr);
             
             const selectEl = tr.querySelector('.item-select');
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten --</option>';
-            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
+            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Manual]</option>';
             
-            const defaultItems = masterDatabase.filter(d => d.type === 'lain' && !d.name.startsWith('>>>'));
-            defaultItems.forEach(d => {
-                optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
+            masterDatabase.forEach(d => {
+                if (d.type === 'lain') {
+                    if (d.name.startsWith('>>>') && d.name.endsWith('<<<')) {
+                        optionsHtml += `<option value="" disabled class="opt-group-header">${d.name}</option>`;
+                    } else {
+                        optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
+                    }
+                }
             });
             selectEl.innerHTML = optionsHtml;
             selectEl.value = item.name;
@@ -1030,18 +1052,14 @@
 
         if (!name) { alert('Mohon isi Nama Deskripsi dengan benar!'); return; }
 
-        // Buat key sanitasi unik berbasis teks nama item kustom
         const sanitizedKey = name.toUpperCase().replace(/[\.\#\$\[\]\s]/g, "-");
-
         let newItem = { id: Date.now(), type: type, name: name, price: price, code: code };
 
-        // 1. Simpan ke LocalStorage
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === type));
         savedData.push(newItem);
         localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
 
-        // 2. Simpan Unit Tunggal Baru ke Cloud Firebase
         if(window.db && window.dbRef && window.dbSet) {
             window.dbSet(window.dbRef(window.db, 'master_database_v2/' + sanitizedKey), newItem);
         }
@@ -1061,7 +1079,6 @@
         if (event) event.stopPropagation();
         if (String(id).startsWith('L0')) { alert('Item bawaan ini dikunci sistem dan tidak boleh dihapus!'); return; }
         
-        // Cari nama berdasarkan ID untuk menghapus jalurnya di cloud
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         let targetItem = savedData.find(item => String(item.id) === String(id));
 
@@ -1103,18 +1120,19 @@
             } else {
                 const codeDisplay = (item.type === 'part' && item.code) ? item.code : '-';
                 
-                if (item.type === 'part') {
+                // Mendukung click untuk pilih Jasa dan Part Suku cadang
+                if (item.type === 'part' || item.type === 'jasa') {
                     tr.className = "clickable-row";
                     tr.setAttribute('onclick', `handleMasterRowClick("${item.name}", ${item.price}, "${item.type}")`);
                 }
                 if (isLocked) tr.style.backgroundColor = "#fff9c4"; 
 
                 tr.innerHTML = `
-                    <td><strong>${labelType}</strong></td>
+                    <td><strong>${labelType === 'LAIN' ? 'OPL / LAIN' : labelType}</strong></td>
                     <td>
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span>${item.name} ${isLocked ? '📌' : ''}</span>
-                            ${item.type === 'part' ? '<span class="badge-click">Klik untuk Pilih</span>' : ''}
+                            ${(item.type === 'part' || item.type === 'jasa') ? '<span class="badge-click">Klik untuk Pilih</span>' : ''}
                         </div>
                     </td>
                     <td><span style="font-family:monospace; font-weight:bold; color:#555;">${codeDisplay}</span></td>
@@ -1157,7 +1175,6 @@
         }
     }
 
-    // --- STRUKTUR FORMAT IMPORT DATA CSV MASAL ONLINE (FIXED 100%) ---
     function importCSVData() {
         const fileInput = document.getElementById('csv-file-input');
         const file = fileInput.files[0];
@@ -1181,7 +1198,6 @@
                 return;
             }
 
-            // Gunakan struktur bentuk Object {} agar Firebase tidak mendeteksinya sebagai array lompat indeks
             let cloudUploadObject = {};
             let localBackupArray = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
 
@@ -1190,7 +1206,10 @@
                 const columns = lines[i].split(separator);
                 if (columns.length <= Math.max(catIdx, nameIdx, priceIdx)) continue;
 
-                const category = columns[catIdx].trim().toLowerCase();
+                // Konversi pembacaan file CSV kategori OPL menjadi struktur internal "lain" agar fitur pinned aman
+                let category = columns[catIdx].trim().toLowerCase();
+                if (category === 'opl') category = 'lain';
+
                 const name = columns[nameIdx].trim().replace(/^["']|["']$/g, '').trim(); 
                 let price = parseFloat(columns[priceIdx].trim().replace(/[^0-9.-]/g, '')) || 0;
                 let code = codeIdx !== -1 && columns[codeIdx] ? columns[codeIdx].trim().replace(/^["']|["']$/g, '').trim() : "";
@@ -1203,7 +1222,6 @@
 
                     let recordItem = { id: uniqueID, type: category, name: name, price: price, code: code };
                     
-                    // Masukkan ke penampung upload cloud & backup lokal
                     cloudUploadObject[sanitizedCloudKey] = recordItem;
                     localBackupArray = localBackupArray.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === category));
                     localBackupArray.push(recordItem);
@@ -1212,10 +1230,8 @@
                 }
             }
 
-            // 1. Simpan Backup ke Penyimpanan Lokal Device
             localStorage.setItem('bengkel_master_db', JSON.stringify(localBackupArray));
 
-            // 2. Kirim update gabungan masal langsung ke node Firebase Realtime Database
             if (window.db && window.dbRef && window.dbUpdate && successCount > 0) {
                 showToast("⏳ Mengunggah Katalog CSV Masal ke Cloud Firebase...");
                 
@@ -1292,7 +1308,7 @@
             estimationData.jasa.push({
                 qty: row.querySelector('.qty-input').value,
                 price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-select').value,
+                name: row.querySelector('.item-name').value,
                 disc: row.querySelector('.disc-input').value,
                 discType: row.querySelector('.disc-type-select').value
             });
@@ -1370,7 +1386,7 @@
             const row = jasaBody.querySelector('tr:nth-last-child(3)');
             row.querySelector('.qty-input').value = j.qty;
             row.querySelector('.price-input').value = j.price;
-            row.querySelector('.item-select').value = j.name;
+            row.querySelector('.item-name').value = j.name;
             if(j.disc) row.querySelector('.disc-input').value = j.disc;
             if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
         });
@@ -1470,14 +1486,12 @@
         updateAllDropdowns();
         initDefaultLainTable(); 
 
-        // Listener Real-time Cloud Sinkronisasi Masal Sempurna ke Seluruh Perangkat Berbasis Objek
         setTimeout(() => {
             if (window.db && window.dbRef && window.dbOnValue) {
                 const cloudMasterRef = window.dbRef(window.db, 'master_database_v2');
                 window.dbOnValue(cloudMasterRef, (snapshot) => {
                     const cloudData = snapshot.val();
                     if (cloudData) {
-                        // Ubah pasangan Objek Cloud menjadi Array bersih untuk diproses oleh aplikasi lokal
                         let parsedCloudArray = Object.values(cloudData);
                         
                         masterDatabase = [...lockedLainItems, ...parsedCloudArray];
