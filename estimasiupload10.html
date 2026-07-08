@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Estimasi Service Bengkel</title>
+    <title></title>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -397,11 +397,26 @@
             transform: scale(1.1);
         }
 
+        .header-title-print {
+            display: none;
+        }
+
         @media print {
             body { background: #fff; padding: 0; }
             .container { box-shadow: none; max-width: 100%; padding: 0; }
             .action-panel, .storage-panel, .master-panel, .btn, .btn-remove, .btn-copy, .scroll-top-btn { display: none !important; }
             input[type="text"], input[type="number"], select { border-bottom: none !important; }
+            
+            /* Mengubah judul saat di-print */
+            .header-title-screen { display: none !important; }
+            .header-title-print { 
+                display: block !important; 
+                text-align: center;
+                font-size: 16pt;
+                font-weight: bold;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+            }
         }
     </style>
 </head>
@@ -414,7 +429,8 @@
 <div class="container" id="main-content">
     <div id="top-anchor"></div>
     
-    <div class="header-title">Estimasi Biaya Service Bengkel (MODEL 2)</div>
+    <div class="header-title header-title-screen">Estimasi Biaya Service Bengkel</div>
+    <div class="header-title-print">Estimasi Biaya Service</div>
 
     <div class="nopol-container">
         <label for="nopol">NOMOR POLISI :</label>
@@ -652,7 +668,6 @@
 </div>
 
 <script>
-    // 5 ITEM PENTING TETAP DIPERTAHANKAN DAN BERKATEGORI OPL
     const lockedLainItems = [
         { id: 'L01', type: 'opl', name: 'SPOORING P', price: 185000, code: '' },
         { id: 'L02', type: 'opl', name: 'GREASING STEERING RACK', price: 25000, code: '' },
@@ -707,7 +722,6 @@
         let subtotalPart = 0;
         let discTotalPart = 0;
 
-        // Perhitungan Tabel Jasa
         document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -730,7 +744,6 @@
         document.getElementById('subtotal-jasa').innerText = subtotalJasa.toLocaleString('id-ID');
         document.getElementById('discount-total-jasa').innerText = discTotalJasa.toLocaleString('id-ID');
 
-        // Perhitungan Tabel Lain-Lain (OPL)
         document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -757,7 +770,6 @@
         const discountTotalLainElem = document.getElementById('discount-total-lain');
         if (discountTotalLainElem) discountTotalLainElem.innerText = discTotalLain.toLocaleString('id-ID');
 
-        // Perhitungan Tabel Part / Bahan
         document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -780,11 +792,9 @@
         document.getElementById('subtotal-part').innerText = subtotalPart.toLocaleString('id-ID');
         document.getElementById('discount-total-part').innerText = discTotalPart.toLocaleString('id-ID');
 
-        // Grand Total Kalkulasi
         const grandTotalGross = subtotalJasa + subtotalLain + subtotalPart;
         document.getElementById('grand-total').innerText = grandTotalGross.toLocaleString('id-ID');
 
-        // Total Potongan Discount Akumulasi (Jasa + OPL + Part)
         const totalpotongandiscount = discTotalJasa + discTotalLain + discTotalPart;
         document.getElementById('main-discount').value = totalpotongandiscount.toLocaleString('id-ID');
 
@@ -823,7 +833,6 @@
                     <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
                 </div>`;
         } else {
-            // Drop-down khusus OPL
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
