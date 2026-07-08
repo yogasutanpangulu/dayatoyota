@@ -1181,8 +1181,8 @@
                 }
             }
 
-            // 1. TETAP SIMPAN DI LOKAL DEVICE SEBAGAI BACKUP
-            let savedData = JSON.replace ? JSON.parse(localStorage.getItem('bengkel_master_db')) || [] : [];
+            // 1. FIXED: Perbaikan syntax evaluasi Boolean untuk LocalStorage backup
+            let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
             // Gabungkan data lama dan data baru hasil import
             let combinedData = [...savedData, ...temporaryRecords];
             localStorage.setItem('bengkel_master_db', JSON.stringify(combinedData));
@@ -1448,18 +1448,16 @@
         updateAllDropdowns();
         initDefaultLainTable(); 
 
-        // Tambahan otomatis unduh data database kustom dari cloud saat halaman dimuat
+        // Otomatis unduh kustom master database kustom dari cloud saat halaman dimuat
         setTimeout(() => {
             if (window.db && window.dbRef && window.dbOnValue) {
                 const cloudMasterRef = window.dbRef(window.db, 'master_database_v2');
                 window.dbOnValue(cloudMasterRef, (snapshot) => {
                     const cloudData = snapshot.val();
                     if (cloudData) {
-                        // Gabungkan item bawaan (lockedLainItems) dengan data kustom dari Cloud Firebase
                         masterDatabase = [...lockedLainItems, ...Object.values(cloudData)];
                         localStorage.setItem('bengkel_master_db', JSON.stringify(Object.values(cloudData)));
                         
-                        // Render ulang semua tabel komponen agar datanya masuk
                         renderMasterTable();
                         updateAllDropdowns();
                         initDefaultLainTable();
