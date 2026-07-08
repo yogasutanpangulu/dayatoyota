@@ -780,7 +780,7 @@
         const grandTotalGross = subtotalJasa + subtotalLain + subtotalPart;
         document.getElementById('grand-total').innerText = grandTotalGross.toLocaleString('id-ID');
 
-        const totalpotongandiscount = discTotalJasa + discTotalPart;
+        const totalpotongandiscount = discTotalJasa + discTotalPart + discTotalLain;
 document.getElementById('main-discount').value = totalpotongandiscount.toLocaleString('id-ID');
 
         const totalSemuaPotongan = discTotalJasa + discTotalLain + discTotalPart;
