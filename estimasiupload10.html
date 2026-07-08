@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Estimasi Service Bengkel</title>
     
+    <!-- Modul Firebase Realtime Database Sinkron Cloud -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -651,7 +652,6 @@
 </div>
 
 <script>
-    // 5 ITEM PENTING ANDA YANG SEMPAT HILANG KINI TELAH DIKEMBALIKAN UTUH & TETAP TERKUNCI OLEH SISTEM
     const lockedLainItems = [
         { id: 'L01', type: 'lain', name: 'SPOORING P', price: 185000, code: '' },
         { id: 'L02', type: 'lain', name: 'GREASING STEERING RACK', price: 25000, code: '' },
@@ -661,6 +661,7 @@
     ]; 
     
     let masterDatabase = [];
+    let cloudMasterObject = {}; // Menyimpan cadangan data sebagai objek bersih pasangan KEY-VALUE
 
     function syncMasterDatabase() {
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
@@ -955,7 +956,6 @@
         }
         tbody.innerHTML = '';
         
-        // Memastikan item bawaan Anda selalu ter-render otomatis di tabel utama Lain-Lain saat dimuat
         lockedLainItems.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -993,7 +993,6 @@
             let optionsHtml = '<option value="" data-price="0">-- Pilih Konten --</option>';
             optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
             
-            // Gabungkan item bawaan dengan data yang tersimpan di katalog pencarian bawah
             const defaultItems = masterDatabase.filter(d => d.type === 'lain' && !d.name.startsWith('>>>'));
             defaultItems.forEach(d => {
                 optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
@@ -1031,11 +1030,21 @@
 
         if (!name) { alert('Mohon isi Nama Deskripsi dengan benar!'); return; }
 
+        // Buat key sanitasi unik berbasis teks nama item kustom
+        const sanitizedKey = name.toUpperCase().replace(/[\.\#\$\[\]\s]/g, "-");
+
+        let newItem = { id: Date.now(), type: type, name: name, price: price, code: code };
+
+        // 1. Simpan ke LocalStorage
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === type));
-        savedData.push({ id: Date.now(), type: type, name: name, price: price, code: code });
-        
+        savedData.push(newItem);
         localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
+
+        // 2. Simpan Unit Tunggal Baru ke Cloud Firebase
+        if(window.db && window.dbRef && window.dbSet) {
+            window.dbSet(window.dbRef(window.db, 'master_database_v2/' + sanitizedKey), newItem);
+        }
         
         document.getElementById('db-name').value = '';
         document.getElementById('db-code').value = '';
@@ -1052,11 +1061,19 @@
         if (event) event.stopPropagation();
         if (String(id).startsWith('L0')) { alert('Item bawaan ini dikunci sistem dan tidak boleh dihapus!'); return; }
         
-        if (confirm('Hapus item ini dari database?')) {
-            let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
+        // Cari nama berdasarkan ID untuk menghapus jalurnya di cloud
+        let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
+        let targetItem = savedData.find(item => String(item.id) === String(id));
+
+        if (confirm('Hapus item ini dari database lokal & cloud online?')) {
             savedData = savedData.filter(item => String(item.id) !== String(id));
             localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
             
+            if (targetItem && window.db && window.dbRef && window.dbRemove) {
+                const sanitizedKey = targetItem.name.toUpperCase().replace(/[\.\#\$\[\]\s]/g, "-");
+                window.dbRemove(window.dbRef(window.db, 'master_database_v2/' + sanitizedKey));
+            }
+
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
@@ -1127,8 +1144,11 @@
     }
 
     function clearAllDatabase() {
-        if (confirm('Apakah Anda yakin ingin MENGHAPUS SEMUA DATA kustom tambahan Anda?')) {
+        if (confirm('Apakah Anda yakin ingin MENGHAPUS SEMUA DATA kustom tambahan Anda di lokal & cloud?')) {
             localStorage.removeItem('bengkel_master_db');
+            if (window.db && window.dbRef && window.dbRemove) {
+                window.dbRemove(window.dbRef(window.db, 'master_database_v2'));
+            }
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
@@ -1137,6 +1157,7 @@
         }
     }
 
+    // --- STRUKTUR FORMAT IMPORT DATA CSV MASAL ONLINE (FIXED 100%) ---
     function importCSVData() {
         const fileInput = document.getElementById('csv-file-input');
         const file = fileInput.files[0];
@@ -1160,8 +1181,9 @@
                 return;
             }
 
-            // Ambil data yang sudah ada di lokal atau buat array baru
-            let temporaryRecords = [];
+            // Gunakan struktur bentuk Object {} agar Firebase tidak mendeteksinya sebagai array lompat indeks
+            let cloudUploadObject = {};
+            let localBackupArray = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
 
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
@@ -1176,36 +1198,40 @@
                 const isSystemLocked = lockedLainItems.some(lock => lock.name.toLowerCase() === name.toLowerCase() && category === 'lain');
 
                 if (['jasa', 'part', 'lain'].includes(category) && name && !isSystemLocked) {
-                    temporaryRecords.push({ id: Date.now() + i, type: category, name: name, price: price, code: code });
+                    const uniqueID = Date.now() + i;
+                    const sanitizedCloudKey = name.toUpperCase().replace(/[\.\#\$\[\]\s]/g, "-");
+
+                    let recordItem = { id: uniqueID, type: category, name: name, price: price, code: code };
+                    
+                    // Masukkan ke penampung upload cloud & backup lokal
+                    cloudUploadObject[sanitizedCloudKey] = recordItem;
+                    localBackupArray = localBackupArray.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === category));
+                    localBackupArray.push(recordItem);
+
                     successCount++;
                 }
             }
 
-            // 1. FIXED: Perbaikan syntax evaluasi Boolean untuk LocalStorage backup
-            let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
-            // Gabungkan data lama dan data baru hasil import
-            let combinedData = [...savedData, ...temporaryRecords];
-            localStorage.setItem('bengkel_master_db', JSON.stringify(combinedData));
+            // 1. Simpan Backup ke Penyimpanan Lokal Device
+            localStorage.setItem('bengkel_master_db', JSON.stringify(localBackupArray));
 
-            // 2. KIRIM DATA MASTER KE FIREBASE CLOUD (Agar terbaca di gadget lain)
-            if (window.db && window.dbRef && window.dbSet) {
-                showToast("⏳ Mengunggah Data Master ke Firebase Cloud...");
+            // 2. Kirim update gabungan masal langsung ke node Firebase Realtime Database
+            if (window.db && window.dbRef && window.dbUpdate && successCount > 0) {
+                showToast("⏳ Mengunggah Katalog CSV Masal ke Cloud Firebase...");
                 
-                // Menyimpan ke node 'master_database_v2' agar sinkron khusus untuk Estimasi 2
-                window.dbSet(window.dbRef(window.db, 'master_database_v2'), combinedData)
+                window.dbUpdate(window.dbRef(window.db, 'master_database_v2'), cloudUploadObject)
                     .then(() => {
-                        alert(`\u2705 Berhasil mengimpor ${successCount} item data ke Local & Firebase Cloud!`);
+                        alert(`\u2705 SUKSES ONLINE! Berhasil menyinkronkan ${successCount} item data masal ke seluruh Gadget Bengkel.`);
                         syncMasterDatabase();
                         renderMasterTable();
                         updateAllDropdowns();
                         initDefaultLainTable();
                     })
                     .catch((error) => {
-                        console.error("Gagal ke cloud:", error);
-                        alert(`\u26a0\ufe0f Data tersimpan di HP ini saja, gagal sinkron ke Cloud Firebase.`);
+                        console.error("Firebase Gagal:", error);
+                        alert("⚠️ Tersimpan di HP ini saja, Gagal kirim ke server cloud.");
                     });
             } else {
-                alert(`\u2705 Berhasil mengimpor ${successCount} item ke lokal memori.`);
                 syncMasterDatabase(); renderMasterTable(); updateAllDropdowns(); initDefaultLainTable();
             }
         };
@@ -1252,7 +1278,6 @@
         });
     }
 
-    // --- INTEGRASI STRUKTUR CLOUD FIREBASE ---
     function saveEstimation() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
         if (!nopol) { alert('Harap isi NOMOR POLISI sebelum menyimpan!'); return; }
@@ -1291,13 +1316,11 @@
             });
         });
 
-        // 1. Simpan Lokal Device (Mencegah kehilangan berkas)
         let savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
         savedEstimations = savedEstimations.filter(e => e.nopol !== nopol);
         savedEstimations.push(estimationData);
         localStorage.setItem('bengkel_estimations', JSON.stringify(savedEstimations));
 
-        // 2. Unggah/Kirim data ke Cloud Firebase default-rtdb (Node: estimasi_records_v2)
         if (window.db && window.dbRef && window.dbSet) {
             const cleanKey = nopol.replace(/[\.\#\$\[\]]/g, "-");
             const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
@@ -1315,7 +1338,6 @@
         loadStorageList();
     }
 
-    // Fungsi Pengambilan Berkas Online dari Firebase Cloud Realtime Database
     function fetchFromCloudDatabase() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
         if (!nopol) { alert('Masukkan Nomor Polisi terlebih dahulu untuk melacak data cloud!'); return; }
@@ -1448,15 +1470,18 @@
         updateAllDropdowns();
         initDefaultLainTable(); 
 
-        // Otomatis unduh kustom master database kustom dari cloud saat halaman dimuat
+        // Listener Real-time Cloud Sinkronisasi Masal Sempurna ke Seluruh Perangkat Berbasis Objek
         setTimeout(() => {
             if (window.db && window.dbRef && window.dbOnValue) {
                 const cloudMasterRef = window.dbRef(window.db, 'master_database_v2');
                 window.dbOnValue(cloudMasterRef, (snapshot) => {
                     const cloudData = snapshot.val();
                     if (cloudData) {
-                        masterDatabase = [...lockedLainItems, ...Object.values(cloudData)];
-                        localStorage.setItem('bengkel_master_db', JSON.stringify(Object.values(cloudData)));
+                        // Ubah pasangan Objek Cloud menjadi Array bersih untuk diproses oleh aplikasi lokal
+                        let parsedCloudArray = Object.values(cloudData);
+                        
+                        masterDatabase = [...lockedLainItems, ...parsedCloudArray];
+                        localStorage.setItem('bengkel_master_db', JSON.stringify(parsedCloudArray));
                         
                         renderMasterTable();
                         updateAllDropdowns();
