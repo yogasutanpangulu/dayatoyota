@@ -1160,7 +1160,8 @@
                 return;
             }
 
-            let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
+            // Ambil data yang sudah ada di lokal atau buat array baru
+            let temporaryRecords = [];
 
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
@@ -1175,18 +1176,38 @@
                 const isSystemLocked = lockedLainItems.some(lock => lock.name.toLowerCase() === name.toLowerCase() && category === 'lain');
 
                 if (['jasa', 'part', 'lain'].includes(category) && name && !isSystemLocked) {
-                    savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === category));
-                    savedData.push({ id: Date.now() + i, type: category, name: name, price: price, code: code });
+                    temporaryRecords.push({ id: Date.now() + i, type: category, name: name, price: price, code: code });
                     successCount++;
                 }
             }
 
-            localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
-            syncMasterDatabase();
-            renderMasterTable();
-            updateAllDropdowns();
-            initDefaultLainTable();
-            alert(`✅ Berhasil mengimpor ${successCount} item data dari file CSV!`);
+            // 1. TETAP SIMPAN DI LOKAL DEVICE SEBAGAI BACKUP
+            let savedData = JSON.replace ? JSON.parse(localStorage.getItem('bengkel_master_db')) || [] : [];
+            // Gabungkan data lama dan data baru hasil import
+            let combinedData = [...savedData, ...temporaryRecords];
+            localStorage.setItem('bengkel_master_db', JSON.stringify(combinedData));
+
+            // 2. KIRIM DATA MASTER KE FIREBASE CLOUD (Agar terbaca di gadget lain)
+            if (window.db && window.dbRef && window.dbSet) {
+                showToast("⏳ Mengunggah Data Master ke Firebase Cloud...");
+                
+                // Menyimpan ke node 'master_database_v2' agar sinkron khusus untuk Estimasi 2
+                window.dbSet(window.dbRef(window.db, 'master_database_v2'), combinedData)
+                    .then(() => {
+                        alert(`\u2705 Berhasil mengimpor ${successCount} item data ke Local & Firebase Cloud!`);
+                        syncMasterDatabase();
+                        renderMasterTable();
+                        updateAllDropdowns();
+                        initDefaultLainTable();
+                    })
+                    .catch((error) => {
+                        console.error("Gagal ke cloud:", error);
+                        alert(`\u26a0\ufe0f Data tersimpan di HP ini saja, gagal sinkron ke Cloud Firebase.`);
+                    });
+            } else {
+                alert(`\u2705 Berhasil mengimpor ${successCount} item ke lokal memori.`);
+                syncMasterDatabase(); renderMasterTable(); updateAllDropdowns(); initDefaultLainTable();
+            }
         };
         reader.readAsText(file);
     }
@@ -1422,10 +1443,30 @@
     }
 
     window.onload = function() {
-        loadStorageList();
+        syncMasterDatabase();
         renderMasterTable();
         updateAllDropdowns();
         initDefaultLainTable(); 
+
+        // Tambahan otomatis unduh data database kustom dari cloud saat halaman dimuat
+        setTimeout(() => {
+            if (window.db && window.dbRef && window.dbOnValue) {
+                const cloudMasterRef = window.dbRef(window.db, 'master_database_v2');
+                window.dbOnValue(cloudMasterRef, (snapshot) => {
+                    const cloudData = snapshot.val();
+                    if (cloudData) {
+                        // Gabungkan item bawaan (lockedLainItems) dengan data kustom dari Cloud Firebase
+                        masterDatabase = [...lockedLainItems, ...Object.values(cloudData)];
+                        localStorage.setItem('bengkel_master_db', JSON.stringify(Object.values(cloudData)));
+                        
+                        // Render ulang semua tabel komponen agar datanya masuk
+                        renderMasterTable();
+                        updateAllDropdowns();
+                        initDefaultLainTable();
+                    }
+                });
+            }
+        }, 1000);
     };
 </script>
 </body>
