@@ -131,15 +131,6 @@
         .disc-input { text-align: right; width: 55px; color: #d32f2f; }
         .disc-type-select { width: 45px; border: none; background: transparent; cursor: pointer; font-size: 8.5pt; color: #d32f2f; }
         
-        /* CSS sekat pemisah grup berwarna hitam tebal di dalam list dropdown OPL */
-        select.item-select option.opt-group-header {
-            background-color: #000000 !important;
-            color: #ffffff !important;
-            font-weight: bold !important;
-            text-align: center !important;
-            letter-spacing: 1px;
-        }
-
         .grand-total-table {
             width: 60%;
             float: right;
@@ -218,7 +209,6 @@
         .btn-reset { background: #ff9800; color: white; border: none; }
         .btn-reset:hover { background: #e68a00; }
 
-        /* Panel Penyimpanan & Panel Master Data */
         .storage-panel, .master-panel {
             margin-top: 25px;
             background: #f9f9f9;
@@ -254,7 +244,6 @@
         .btn-load { color: #2196F3; border-color: #2196F3; background: transparent; }
         .btn-delete { color: #f44336; border-color: #f44336; background: transparent; }
 
-        /* Form Master Data & Import */
         .master-form {
             display: flex;
             gap: 10px;
@@ -316,7 +305,6 @@
             padding: 6px 10px !important;
         }
 
-        /* Toast Notification & Blok Kompilasi Kode */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -395,7 +383,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Menggunakan konfigurasi server database yang sama dengan index.html utama
         const firebaseConfig = {
             apiKey: "AIzaSyBHLuzqXq_T6BGACGbDdheC7w8ZEQcsqCM",
             authDomain: "penerimaan-service.firebaseapp.com",
@@ -714,7 +701,7 @@
         let subtotalPart = 0;
         let discTotalPart = 0;
 
-        // Perhitungan Jasa
+        // Perhitungan Tabel Jasa
         document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -737,7 +724,7 @@
         document.getElementById('subtotal-jasa').innerText = subtotalJasa.toLocaleString('id-ID');
         document.getElementById('discount-total-jasa').innerText = discTotalJasa.toLocaleString('id-ID');
 
-        // Perhitungan Lain-Lain
+        // Perhitungan Tabel Lain-Lain
         document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -760,7 +747,7 @@
         document.getElementById('subtotal-lain').innerText = subtotalLain.toLocaleString('id-ID');
         document.getElementById('discount-total-lain').innerText = discTotalLain.toLocaleString('id-ID');
 
-        // Perhitungan Part
+        // Perhitungan Tabel Part / Bahan
         document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -856,7 +843,7 @@
 
     function autoFillPrice(selectElement) {
         const selectedOption = selectElement.options[selectElement.selectedIndex];
-        if(!selectedOption || selectedOption.classList.contains('opt-group-header')) {
+        if(!selectedOption || selectedOption.disabled) {
             selectElement.value = "";
             return;
         }
@@ -914,6 +901,7 @@
         calculateAll();
     }
 
+    // FIXED: Menggunakan element pembatas optgroup murni HTML agar tidak memicu bug layar blank hitam
     function updateAllDropdowns() {
         document.querySelectorAll('.item-select[data-type="lain"]').forEach(select => {
             const currentValue = select.value; 
@@ -922,7 +910,7 @@
             masterDatabase.forEach(item => {
                 if (item.type === 'lain') {
                     if (item.name.startsWith('>>>') && item.name.endsWith('<<<')) {
-                        optionsHtml += `<option value="" disabled class="opt-group-header">${item.name}</option>`;
+                        optionsHtml += `<optgroup label="${item.name}"></optgroup>`;
                     } else {
                         optionsHtml += `<option value="${item.name}" data-price="${item.price}">${item.name}</option>`;
                     }
@@ -955,7 +943,7 @@
             masterDatabase.forEach(d => {
                 if (d.type === 'lain') {
                     if (d.name.startsWith('>>>') && d.name.endsWith('<<<')) {
-                        optionsHtml += `<option value="" disabled class="opt-group-header">${d.name}</option>`;
+                        optionsHtml += `<optgroup label="${d.name}"></optgroup>`;
                     } else {
                         optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
                     }
@@ -1024,7 +1012,7 @@
     }
 
     function renderMasterTable() {
-        const tbody = document.getElementById('master-db-rows');
+        const tbody = document.getElementById('master-db-rows'); 
         tbody.innerHTML = '';
         masterDatabase.forEach(item => {
             const tr = document.createElement('tr');
