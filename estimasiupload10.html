@@ -3,6 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <title>Estimasi Service Bengkel</title>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Menggunakan konfigurasi server database yang sama dengan index.html utama
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHLuzqXq_T6BGACGbDdheC7w8ZEQcsqCM",
+            authDomain: "penerimaan-service.firebaseapp.com",
+            databaseURL: "https://penerimaan-service-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "penerimaan-service",
+            storageBucket: "penerimaan-service.firebasestorage.app",
+            messagingSenderId: "238520546109",
+            appId: "1:238520546109:web:1e1b6c31288fd431290b54"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        // Diekspos ke window object agar fungsi simpan cloud internal dapat membaca langsung
+        window.db = db; window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbUpdate = update; window.dbRemove = remove;
+    </script>
+
     <style>
         *, *::before, *::after {
             box-sizing: border-box;
@@ -209,6 +232,7 @@
         .btn-reset { background: #ff9800; color: white; border: none; }
         .btn-reset:hover { background: #e68a00; }
 
+        /* Panel Penyimpanan & Panel Master Data */
         .storage-panel, .master-panel {
             margin-top: 25px;
             background: #f9f9f9;
@@ -244,6 +268,7 @@
         .btn-load { color: #2196F3; border-color: #2196F3; background: transparent; }
         .btn-delete { color: #f44336; border-color: #f44336; background: transparent; }
 
+        /* Form Master Data & Import */
         .master-form {
             display: flex;
             gap: 10px;
@@ -305,6 +330,7 @@
             padding: 6px 10px !important;
         }
 
+        /* Toast Notification & Blok Kompilasi Kode */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -378,26 +404,6 @@
             input[type="text"], input[type="number"], select { border-bottom: none !important; }
         }
     </style>
-    
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBHLuzqXq_T6BGACGbDdheC7w8ZEQcsqCM",
-            authDomain: "penerimaan-service.firebaseapp.com",
-            databaseURL: "https://penerimaan-service-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "penerimaan-service",
-            storageBucket: "penerimaan-service.firebasestorage.app",
-            messagingSenderId: "238520546109",
-            appId: "1:238520546109:web:1e1b6c31288fd431290b54"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        
-        window.db = db; window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbUpdate = update; window.dbRemove = remove;
-    </script>
 </head>
 <body>
 
@@ -446,7 +452,7 @@
                 <td>
                     <div class="input-with-copy">
                         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
+                        <select class="item-select" data-type="jasa" onchange="autoFillPrice(this)"></select>
                     </div>
                 </td>
                 <td>
@@ -475,7 +481,7 @@
     </table>
 
     <div class="table-title">
-        <span></span>
+        <span>KOLOM LAIN-LAIN</span>
         <button class="btn btn-add" onclick="addRow('table-lain')">+ Tambah Kolom</button>
     </div>
     <table id="table-lain">
@@ -483,7 +489,7 @@
             <tr>
                 <th style="width: 8%;" class="text-center">QTY</th>
                 <th style="width: 22%;">HARGA / PCS</th>
-                <th style="width: 32%;"></th>
+                <th style="width: 32%;">KETERANGAN</th>
                 <th style="width: 16%; color: #d32f2f;">DISCOUNT</th>
                 <th style="width: 17%;">TOTAL</th>
                 <th style="width: 5%;" class="text-center">Aksi</th>
@@ -600,7 +606,7 @@
 
     <div class="master-panel">
         <div class="master-header">
-            <h3 style="margin:0; font-size:11pt; color: #333;">⚙️ Panel Master Database (Jasa & OPL / Lain)</h3>
+            <h3 style="margin:0; font-size:11pt; color: #333;">⚙️ Panel Master Database (Jasa & Part)</h3>
             <input type="text" id="db-search-input" class="search-box" placeholder="Cari di katalog database..." oninput="filterMasterTable()" style="width: 220px;">
         </div>
         
@@ -608,7 +614,7 @@
             <div style="width: 100%; display: flex; gap: 10px; margin-bottom: 5px;">
                 <select id="db-category" style="width: 130px;">
                     <option value="jasa">Kategori: JASA</option>
-                    <option value="lain">Kategori: OPL / LAIN</option>
+                    <option value="lain">Kategori: LAIN-LAIN</option>
                     <option value="part">Kategori: PART / BAHAN</option>
                 </select>
                 <input type="text" id="db-name" placeholder="Nama Barang / Jasa..." style="flex:2;">
@@ -626,7 +632,7 @@
         </div>
 
         <div style="font-size: 8.5pt; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 6px; border-radius: 4px;">
-            💡 <strong>Petunjuk Jasa & Part:</strong> Klik langsung pada baris tabel master bertanda <strong>[Klik untuk Pilih]</strong> di bawah untuk memilih part/jasa tanpa memindahkan layar kerja Anda! Baris hitam tebal berfungsi sebagai pembatas grup.
+            💡 <strong>Petunjuk Part:</strong> Klik langsung pada baris tabel master bertanda <strong>[Klik untuk Pilih]</strong> di bawah untuk memilih part tanpa memindahkan layar kerja Anda! Baris hitam tebal berfungsi sebagai pembatas grup.
         </div>
 
         <table class="master-table">
@@ -645,6 +651,7 @@
 </div>
 
 <script>
+    // 5 ITEM PENTING ANDA YANG SEMPAT HILANG KINI TELAH DIKEMBALIKAN UTUH & TETAP TERKUNCI OLEH SISTEM
     const lockedLainItems = [
         { id: 'L01', type: 'lain', name: 'SPOORING P', price: 185000, code: '' },
         { id: 'L02', type: 'lain', name: 'GREASING STEERING RACK', price: 25000, code: '' },
@@ -668,15 +675,11 @@
         toast.innerText = message;
         container.appendChild(toast);
         
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 50);
+        setTimeout(() => toast.classList.add('show'), 50);
         
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => {
-                toast.remove();
-            }, 300);
+            setTimeout(() => toast.remove(), 300);
         }, 2000);
     }
 
@@ -696,8 +699,10 @@
     function calculateAll() {
         let subtotalJasa = 0;
         let discTotalJasa = 0;
+        
         let subtotalLain = 0;
         let discTotalLain = 0;
+        
         let subtotalPart = 0;
         let discTotalPart = 0;
 
@@ -770,9 +775,12 @@
         document.getElementById('subtotal-part').innerText = subtotalPart.toLocaleString('id-ID');
         document.getElementById('discount-total-part').innerText = discTotalPart.toLocaleString('id-ID');
 
+        // Grand Total Kalkulasi
         const grandTotalGross = subtotalJasa + subtotalLain + subtotalPart;
         document.getElementById('grand-total').innerText = grandTotalGross.toLocaleString('id-ID');
-        document.getElementById('main-discount').value = discTotalJasa + discTotalPart;
+
+        const totalDiscountUtama = discTotalJasa + discTotalPart;
+        document.getElementById('main-discount').value = totalDiscountUtama;
 
         const totalSemuaPotongan = discTotalJasa + discTotalLain + discTotalPart;
         const finalTotal = Math.max(0, grandTotalGross - totalSemuaPotongan);
@@ -798,28 +806,45 @@
         const tbody = table.getElementsByTagName('tbody')[0];
         const totalRow = tbody.querySelector('.row-total');
         const type = tableId.split('-')[1];
+
         const newRow = document.createElement('tr');
         let inputTdHtml = '';
         
-        if (type === 'part' || type === 'jasa') {
+        if (type === 'part') {
             inputTdHtml = `
                 <div class="input-with-copy">
-                    <button class="btn-copy" onclick="copyValue(this)">📋</button>
+                    <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
                     <input type="text" class="item-name" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
                 </div>`;
         } else {
             inputTdHtml = `
                 <div class="input-with-copy">
-                    <button class="btn-copy" onclick="copyValue(this)">📋</button>
+                    <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
                     <select class="item-select" data-type="${type}" onchange="autoFillPrice(this)"></select>
                 </div>`;
         }
 
         newRow.innerHTML = `
             <td class="text-center"><input type="number" class="qty-input" value="1" oninput="calculateAll()"></td>
-            <td><div class="currency-box"><button class="btn-copy" onclick="copyValue(this)">📋</button><div class="price-wrapper"><span>Rp</span><input type="number" class="price-input" placeholder="0" oninput="calculateAll()"></div></div></td>
+            <td>
+                <div class="currency-box">
+                    <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
+                    <div class="price-wrapper">
+                        <span>Rp</span>
+                        <input type="number" class="price-input" placeholder="0" oninput="calculateAll()">
+                    </div>
+                </div>
+            </td>
             <td>${inputTdHtml}</td>
-            <td><div class="currency-box"><input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()"><select class="disc-type-select" onchange="calculateAll()"><option value="%">%</option><option value="Rp">Rp</option></select></div></td>
+            <td>
+                <div class="currency-box">
+                    <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
+                    <select class="disc-type-select" onchange="calculateAll()">
+                        <option value="%">%</option>
+                        <option value="Rp">Rp</option>
+                    </select>
+                </div>
+            </td>
             <td><div class="currency-box"><span>Rp</span><span class="row-total-val">0</span></div></td>
             <td class="text-center"><button class="btn-remove" onclick="removeRow(this)">X</button></td>
         `;
@@ -830,29 +855,25 @@
             tbody.appendChild(newRow);
         }
         
-        if (type === 'lain') {
-            updateAllDropdowns();
-        }
+        if (type !== 'part') updateAllDropdowns();
         calculateAll();
     }
 
     function removeRow(button) {
-        button.closest('tr').remove();
+        const row = button.closest('tr');
+        row.remove();
         calculateAll();
     }
 
     function autoFillPrice(selectElement) {
         const selectedOption = selectElement.options[selectElement.selectedIndex];
-        if(!selectedOption || selectedOption.disabled) {
-            selectElement.value = "";
-            return;
-        }
-
         const price = selectedOption.getAttribute('data-price') || 0;
-        const priceInput = selectElement.closest('tr').querySelector('.price-input');
+        
+        const row = selectElement.closest('tr');
+        const priceInput = row.querySelector('.price-input');
         
         if (selectElement.value === "CUSTOM") {
-            const customName = prompt("Masukkan nama manual:");
+            const customName = prompt("Masukkan nama Jasa / Keterangan manual:");
             if (customName) {
                 const newOpt = document.createElement('option');
                 newOpt.value = customName;
@@ -873,11 +894,10 @@
     }
 
     function handleMasterRowClick(name, price, type) {
-        if (type !== 'part' && type !== 'jasa') return;
+        if (type !== 'part') return;
         if (name.startsWith('>>>')) return;
 
-        let tableId = type === 'jasa' ? 'table-jasa' : 'table-part';
-        const table = document.getElementById(tableId);
+        const table = document.getElementById('table-part');
         const rows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
         let targetRow = null;
 
@@ -890,73 +910,116 @@
         }
 
         if (!targetRow) {
-            addRow(tableId);
+            addRow('table-part');
             const updatedRows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
             targetRow = updatedRows[updatedRows.length - 1];
         }
 
         targetRow.querySelector('.item-name').value = name;
         targetRow.querySelector('.price-input').value = price;
-        showToast(`✅ ${type.toUpperCase()} Terpilih: ${name}`);
+
+        targetRow.style.backgroundColor = "#e8f5e9";
+        setTimeout(() => targetRow.style.backgroundColor = "transparent", 800);
+
+        showToast(`✅ Part Terpilih: ${name}`);
         calculateAll();
     }
 
-    // FIXED: Menggunakan element pembatas optgroup murni HTML agar tidak memicu bug layar blank hitam
     function updateAllDropdowns() {
-        document.querySelectorAll('.item-select[data-type="lain"]').forEach(select => {
+        const selects = document.querySelectorAll('.item-select');
+        selects.forEach(select => {
+            const currentType = select.getAttribute('data-type');
             const currentValue = select.value; 
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option><option value="CUSTOM" data-price="0">[Tulis Kustom Manual]</option>';
             
-            masterDatabase.forEach(item => {
-                if (item.type === 'lain') {
-                    if (item.name.startsWith('>>>') && item.name.endsWith('<<<')) {
-                        optionsHtml += `<optgroup label="${item.name}"></optgroup>`;
-                    } else {
-                        optionsHtml += `<option value="${item.name}" data-price="${item.price}">${item.name}</option>`;
-                    }
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten --</option>';
+            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
+            
+            const filteredData = masterDatabase.filter(item => item.type === currentType);
+            filteredData.forEach(item => {
+                if (!item.name.startsWith('>>>')) {
+                    optionsHtml += `<option value="${item.name}" data-price="${item.price}">${item.name}</option>`;
                 }
             });
+            
             select.innerHTML = optionsHtml;
             select.value = currentValue; 
         });
     }
 
     function initDefaultLainTable() {
-        const tbody = document.getElementById('body-lain');
+        const table = document.getElementById('table-lain');
+        let tbody = table.getElementsByTagName('tbody')[0];
+        if (!tbody) {
+            tbody = document.createElement('tbody');
+            table.appendChild(tbody);
+        }
         tbody.innerHTML = '';
         
+        // Memastikan item bawaan Anda selalu ter-render otomatis di tabel utama Lain-Lain saat dimuat
         lockedLainItems.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="text-center"><input type="number" class="qty-input" value="1" oninput="calculateAll()"></td>
-                <td><div class="currency-box"><button class="btn-copy" onclick="copyValue(this)">📋</button><div class="price-wrapper"><span>Rp</span><input type="number" class="price-input" value="${item.price}" oninput="calculateAll()"></div></div></td>
-                <td><div class="input-with-copy"><button class="btn-copy" onclick="copyValue(this)">📋</button><select class="item-select" data-type="lain" onchange="autoFillPrice(this)"></select></div></td>
-                <td><div class="currency-box"><input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()"><select class="disc-type-select" onchange="calculateAll()"><option value="%">%</option><option value="Rp">Rp</option></select></div></td>
+                <td>
+                    <div class="currency-box">
+                        <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
+                        <div class="price-wrapper">
+                            <span>Rp</span>
+                            <input type="number" class="price-input" value="${item.price}" oninput="calculateAll()">
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="input-with-copy">
+                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                        <select class="item-select" data-type="lain" onchange="autoFillPrice(this)"></select>
+                    </div>
+                </td>
+                <td>
+                    <div class="currency-box">
+                        <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
+                        <select class="disc-type-select" onchange="calculateAll()">
+                            <option value="%">%</option>
+                            <option value="Rp">Rp</option>
+                        </select>
+                    </div>
+                </td>
                 <td><div class="currency-box"><span>Rp</span><span class="row-total-val">0</span></div></td>
                 <td class="text-center"><button class="btn-remove" onclick="removeRow(this)">X</button></td>
             `;
             tbody.appendChild(tr);
             
             const selectEl = tr.querySelector('.item-select');
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option><option value="CUSTOM" data-price="0">[Tulis Kustom Manual]</option>';
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten --</option>';
+            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
             
-            masterDatabase.forEach(d => {
-                if (d.type === 'lain') {
-                    if (d.name.startsWith('>>>') && d.name.endsWith('<<<')) {
-                        optionsHtml += `<optgroup label="${d.name}"></optgroup>`;
-                    } else {
-                        optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
-                    }
-                }
+            // Gabungkan item bawaan dengan data yang tersimpan di katalog pencarian bawah
+            const defaultItems = masterDatabase.filter(d => d.type === 'lain' && !d.name.startsWith('>>>'));
+            defaultItems.forEach(d => {
+                optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
             });
             selectEl.innerHTML = optionsHtml;
             selectEl.value = item.name;
         });
 
-        tbody.insertAdjacentHTML('beforeend', `
-            <tr class="row-total"><td colspan="4" class="row-total-label">JUMLAH LAIN-LAIN</td><td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td><td></td></tr>
-            <tr class="row-discount"><td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT LAIN-LAIN (-)</td><td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td><td></td></tr>
-        `);
+        const totalTr = document.createElement('tr');
+        totalTr.className = 'row-total';
+        totalTr.innerHTML = `
+            <td colspan="4" class="row-total-label">JUMLAH LAIN-LAIN</td>
+            <td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td>
+            <td></td>
+        `;
+        tbody.appendChild(totalTr);
+
+        const discTr = document.createElement('tr');
+        discTr.className = 'row-discount';
+        discTr.innerHTML = `
+            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT LAIN-LAIN (-)</td>
+            <td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td>
+            <td></td>
+        `;
+        tbody.appendChild(discTr);
+
         calculateAll();
     }
 
@@ -965,23 +1028,19 @@
         const name = document.getElementById('db-name').value.trim();
         const price = parseFloat(document.getElementById('db-price').value) || 0;
         const code = document.getElementById('db-code').value.trim();
-        if (!name) return alert('Mohon isi Nama Deskripsi!');
 
-        const sanitizedKey = name.toUpperCase().replace(/[\.\#\$\[\]\s]/g, "-");
-        let newItem = { id: Date.now(), type: type, name: name, price: price, code: code };
+        if (!name) { alert('Mohon isi Nama Deskripsi dengan benar!'); return; }
 
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === type));
-        savedData.push(newItem);
+        savedData.push({ id: Date.now(), type: type, name: name, price: price, code: code });
+        
         localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
-
-        if(window.db && window.dbRef && window.dbSet) {
-            window.dbSet(window.dbRef(window.db, 'master_database_v2/' + sanitizedKey), newItem);
-        }
         
         document.getElementById('db-name').value = '';
         document.getElementById('db-code').value = '';
         document.getElementById('db-price').value = '';
+
         syncMasterDatabase();
         renderMasterTable();
         updateAllDropdowns();
@@ -991,52 +1050,61 @@
 
     function deleteMasterData(id, event) {
         if (event) event.stopPropagation();
-        if (String(id).startsWith('L0')) return alert('Item bawaan dikunci sistem!');
+        if (String(id).startsWith('L0')) { alert('Item bawaan ini dikunci sistem dan tidak boleh dihapus!'); return; }
         
-        let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
-        let targetItem = savedData.find(item => String(item.id) === String(id));
-
         if (confirm('Hapus item ini dari database?')) {
+            let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
             savedData = savedData.filter(item => String(item.id) !== String(id));
             localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
             
-            if (targetItem && window.db && window.dbRef && window.dbRemove) {
-                const sanitizedKey = targetItem.name.toUpperCase().replace(/[\.\#\$\[\]\s]/g, "-");
-                window.dbRemove(window.dbRef(window.db, 'master_database_v2/' + sanitizedKey));
-            }
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
             initDefaultLainTable();
+            showToast("❌ Data Terhapus dari Katalog!");
         }
     }
 
     function renderMasterTable() {
-        const tbody = document.getElementById('master-db-rows'); 
+        const tbody = document.getElementById('master-db-rows');
         tbody.innerHTML = '';
+
+        if(masterDatabase.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:15px;">Database kosong.</td></tr>`;
+            return;
+        }
+
         masterDatabase.forEach(item => {
             const tr = document.createElement('tr');
             let labelType = item.type.toUpperCase();
-            if(labelType === 'LAIN') labelType = 'OPL / LAIN';
+            const isLocked = String(item.id).startsWith('L0');
+            const isGroupHeader = item.name.startsWith('>>>') && item.name.endsWith('<<<');
 
-            if (item.name.startsWith('>>>') && item.name.endsWith('<<<')) {
+            if (isGroupHeader) {
                 tr.className = "group-header-row";
                 tr.innerHTML = `<td colspan="5">${item.name}</td>`;
             } else {
-                if (item.type === 'part' || item.type === 'jasa') {
+                const codeDisplay = (item.type === 'part' && item.code) ? item.code : '-';
+                
+                if (item.type === 'part') {
                     tr.className = "clickable-row";
                     tr.setAttribute('onclick', `handleMasterRowClick("${item.name}", ${item.price}, "${item.type}")`);
                 }
-                if (String(item.id).startsWith('L0')) {
-                    tr.style.backgroundColor = "#fff9c4"; 
-                }
+                if (isLocked) tr.style.backgroundColor = "#fff9c4"; 
 
                 tr.innerHTML = `
                     <td><strong>${labelType}</strong></td>
-                    <td><div style="display:flex; justify-content:space-between; align-items:center;"><span>${item.name}</span>${(item.type==='part'||item.type==='jasa')?'<span class="badge-click">Klik untuk Pilih</span>':''}</div></td>
-                    <td><span style="font-family:monospace; font-weight:bold; color:#555;">${item.code || '-'}</span></td>
-                    <td>Rp ${item.price.toLocaleString('id-ID')}</td>
-                    <td class="text-center"><button class="btn btn-delete" style="padding:2px 6px; ${(String(item.id).startsWith('L0'))?'opacity:0.4;':''}" onclick="deleteMasterData('${item.id}', event)">Hapus</button></td>
+                    <td>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>${item.name} ${isLocked ? '📌' : ''}</span>
+                            ${item.type === 'part' ? '<span class="badge-click">Klik untuk Pilih</span>' : ''}
+                        </div>
+                    </td>
+                    <td><span style="font-family:monospace; font-weight:bold; color:#555;">${codeDisplay}</span></td>
+                    <td>${item.price === 0 ? 'Rp 0' : 'Rp ' + item.price.toLocaleString('id-ID')}</td>
+                    <td class="text-center">
+                        <button class="btn btn-delete" style="padding:2px 6px; ${isLocked ? 'opacity:0.4; cursor:not-allowed;' : ''}" onclick="deleteMasterData('${item.id}', event)">Hapus</button>
+                    </td>
                 `;
             }
             tbody.appendChild(tr);
@@ -1045,16 +1113,34 @@
 
     function filterMasterTable() {
         const filter = document.getElementById('db-search-input').value.toUpperCase();
-        document.querySelectorAll('#master-db-rows tr').forEach(row => {
+        const rows = document.querySelectorAll('#master-db-rows tr');
+        
+        rows.forEach(row => {
+            if(row.classList.contains('group-header-row')) {
+                row.style.display = filter === "" ? "" : "none";
+                return;
+            }
             if(row.cells.length < 2) return;
-            row.style.display = row.cells[1].innerText.toUpperCase().includes(filter) ? "" : "none";
+            const text = row.cells[1].innerText + " " + row.cells[0].innerText + " " + row.cells[2].innerText;
+            row.style.display = text.toUpperCase().includes(filter) ? "" : "none";
         });
+    }
+
+    function clearAllDatabase() {
+        if (confirm('Apakah Anda yakin ingin MENGHAPUS SEMUA DATA kustom tambahan Anda?')) {
+            localStorage.removeItem('bengkel_master_db');
+            syncMasterDatabase();
+            renderMasterTable();
+            updateAllDropdowns();
+            initDefaultLainTable();
+            showToast("Database kustom dibersihkan.");
+        }
     }
 
     function importCSVData() {
         const fileInput = document.getElementById('csv-file-input');
         const file = fileInput.files[0];
-        if (!file) return alert('Silakan pilih file CSV!');
+        if (!file) { alert('Silakan pilih file CSV terlebih dahulu!'); return; }
 
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -1069,20 +1155,19 @@
             const priceIdx = headers.findIndex(h => h.trim().includes('price'));
             const codeIdx = headers.findIndex(h => h.trim().includes('code'));
 
-            if (catIdx === -1 || nameIdx === -1 || priceIdx === -1) return alert('Format salah!');
+            if (catIdx === -1 || nameIdx === -1 || priceIdx === -1) {
+                alert('Format template salah! Gunakan kolom: category, name, price, code');
+                return;
+            }
 
-            let cloudUploadObject = {};
-            let localBackupArray = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
+            let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
 
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
                 const columns = lines[i].split(separator);
-                
-                if (columns.length <= Math.max(catIdx, nameIdx, priceIdx) || !columns[nameIdx].trim()) continue;
+                if (columns.length <= Math.max(catIdx, nameIdx, priceIdx)) continue;
 
-                let category = columns[catIdx].trim().toLowerCase();
-                if (category === 'opl') category = 'lain'; 
-
+                const category = columns[catIdx].trim().toLowerCase();
                 const name = columns[nameIdx].trim().replace(/^["']|["']$/g, '').trim(); 
                 let price = parseFloat(columns[priceIdx].trim().replace(/[^0-9.-]/g, '')) || 0;
                 let code = codeIdx !== -1 && columns[codeIdx] ? columns[codeIdx].trim().replace(/^["']|["']$/g, '').trim() : "";
@@ -1090,88 +1175,146 @@
                 const isSystemLocked = lockedLainItems.some(lock => lock.name.toLowerCase() === name.toLowerCase() && category === 'lain');
 
                 if (['jasa', 'part', 'lain'].includes(category) && name && !isSystemLocked) {
-                    const sanitizedCloudKey = name.toUpperCase().replace(/[\.\#\$\[\]\s]/g, "-");
-                    let recordItem = { id: Date.now() + i, type: category, name: name, price: price, code: code };
-                    
-                    cloudUploadObject[sanitizedCloudKey] = recordItem;
-                    localBackupArray = localBackupArray.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === category));
-                    localBackupArray.push(recordItem);
+                    savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === category));
+                    savedData.push({ id: Date.now() + i, type: category, name: name, price: price, code: code });
                     successCount++;
                 }
             }
 
-            localStorage.setItem('bengkel_master_db', JSON.stringify(localBackupArray));
-
-            if (window.db && window.dbRef && window.dbUpdate && successCount > 0) {
-                window.dbUpdate(window.dbRef(window.db, 'master_database_v2'), cloudUploadObject)
-                    .then(() => {
-                        alert(`\u2705 ONLINE! Berhasil menyinkronkan ${successCount} item data masal.`);
-                        syncMasterDatabase(); 
-                        renderMasterTable(); 
-                        updateAllDropdowns(); 
-                        initDefaultLainTable();
-                    });
-            }
+            localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
+            syncMasterDatabase();
+            renderMasterTable();
+            updateAllDropdowns();
+            initDefaultLainTable();
+            alert(`✅ Berhasil mengimpor ${successCount} item data dari file CSV!`);
         };
         reader.readAsText(file);
     }
 
     function compilePartCodes() {
+        const table = document.getElementById('table-part');
+        const rows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
         let compiledResult = "";
-        document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
+
+        rows.forEach(row => {
             const nameInput = row.querySelector('.item-name');
-            if (nameInput && nameInput.value.trim() !== "") {
+            if (nameInput && nameInput.value.trim() !== "" && !nameInput.value.includes("Pilih langsung")) {
                 const nameText = nameInput.value.trim();
                 const matchedItem = masterDatabase.find(item => item.type === 'part' && item.name.toLowerCase() === nameText.toLowerCase());
-                compiledResult += (matchedItem && matchedItem.code ? matchedItem.code.trim() : nameText.substring(0,7).toUpperCase()) + " + ";
+                
+                if (matchedItem && matchedItem.code && matchedItem.code.trim() !== "") {
+                    compiledResult += matchedItem.code.trim() + " + ";
+                } else {
+                    let smartCode = nameText.split(' ')[0];
+                    if (smartCode.length > 10) smartCode = smartCode.substring(0, 7);
+                    compiledResult += smartCode.toUpperCase() + " + ";
+                }
             }
         });
-        document.getElementById('compiled-part-codes').innerText = compiledResult ? compiledResult.substring(0, compiledResult.length - 3) : "- Belum ada part dipilih -";
+
+        const outputSpan = document.getElementById('compiled-part-codes');
+        if (compiledResult !== "") {
+            outputSpan.innerText = compiledResult.substring(0, compiledResult.length - 3);
+        } else {
+            outputSpan.innerText = "- Belum ada part dipilih -";
+        }
     }
 
-    function copyCompiledCodes() { 
-        navigator.clipboard.writeText(document.getElementById('compiled-part-codes').innerText); 
-        showToast("📋 Disalin!"); 
+    function copyCompiledCodes() {
+        const text = document.getElementById('compiled-part-codes').innerText;
+        if (text === "- Belum ada part dipilih -") {
+            showToast("⚠️ Tidak ada kode part yang bisa disalin!");
+            return;
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("📋 Kode ringkasan part berhasil disalin!");
+        });
     }
 
+    // --- INTEGRASI STRUKTUR CLOUD FIREBASE ---
     function saveEstimation() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
-        if (!nopol) return alert('Harap isi NOMOR POLISI!');
-        const estimationData = { nopol: nopol, date: new Date().toLocaleDateString('id-ID'), jasa: [], lain: [], part: [] };
+        if (!nopol) { alert('Harap isi NOMOR POLISI sebelum menyimpan!'); return; }
+
+        const estimationData = {
+            nopol: nopol,
+            date: new Date().toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            jasa: [], lain: [], part: []
+        };
 
         document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
-            estimationData.jasa.push({ qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value, name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value, discType: row.querySelector('.disc-type-select').value });
+            estimationData.jasa.push({
+                qty: row.querySelector('.qty-input').value,
+                price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-select').value,
+                disc: row.querySelector('.disc-input').value,
+                discType: row.querySelector('.disc-type-select').value
+            });
         });
         document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
-            estimationData.lain.push({ qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value, name: row.querySelector('.item-select').value, disc: row.querySelector('.disc-input').value, discType: row.querySelector('.disc-type-select').value });
+            estimationData.lain.push({
+                qty: row.querySelector('.qty-input').value,
+                price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-select').value,
+                disc: row.querySelector('.disc-input').value,
+                discType: row.querySelector('.disc-type-select').value
+            });
         });
         document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
-            estimationData.part.push({ qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value, name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value, discType: row.querySelector('.disc-type-select').value });
+            estimationData.part.push({
+                qty: row.querySelector('.qty-input').value,
+                price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-name').value,
+                disc: row.querySelector('.disc-input').value,
+                discType: row.querySelector('.disc-type-select').value
+            });
         });
 
+        // 1. Simpan Lokal Device (Mencegah kehilangan berkas)
         let savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
         savedEstimations = savedEstimations.filter(e => e.nopol !== nopol);
         savedEstimations.push(estimationData);
         localStorage.setItem('bengkel_estimations', JSON.stringify(savedEstimations));
 
+        // 2. Unggah/Kirim data ke Cloud Firebase default-rtdb (Node: estimasi_records_v2)
         if (window.db && window.dbRef && window.dbSet) {
-            window.dbSet(window.dbRef(window.db, 'estimasi_records_v2/' + nopol.replace(/[\.\#\$\[\]]/g, "-")), estimationData).then(() => { showToast(`✅ Saved Cloud!`); });
+            const cleanKey = nopol.replace(/[\.\#\$\[\]]/g, "-");
+            const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
+            window.dbSet(cloudRef, estimationData)
+                .then(() => {
+                    showToast(`✅ Estimasi Mobil ${nopol} Sukses Tersimpan ke Lokal & Cloud!`);
+                })
+                .catch((error) => {
+                    console.error("Firebase Gagal: ", error);
+                    showToast(`⚠️ Tersimpan di Lokal. Cloud Gagal Terhubung.`);
+                });
+        } else {
+            showToast(`✅ Estimasi Mobil ${nopol} Tersimpan di Lokal.`);
         }
         loadStorageList();
     }
 
+    // Fungsi Pengambilan Berkas Online dari Firebase Cloud Realtime Database
     function fetchFromCloudDatabase() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
-        if (!nopol) return alert('Masukkan Nopol!');
-        window.dbOnValue(window.dbRef(window.db, 'estimasi_records_v2/' + nopol.replace(/[\.\#\$\[\]]/g, "-")), (snapshot) => {
-            const est = snapshot.val();
-            if (est) { 
-                injectDataToFormElements(est); 
-                showToast(`📦 Data Cloud Loaded`); 
-            } else { 
-                alert('❌ Tidak ditemukan.'); 
-            }
-        }, { onlyOnce: true });
+        if (!nopol) { alert('Masukkan Nomor Polisi terlebih dahulu untuk melacak data cloud!'); return; }
+
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const cleanKey = nopol.replace(/[\.\#\$\[\]]/g, "-");
+            const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
+            
+            window.dbOnValue(cloudRef, (snapshot) => {
+                const est = snapshot.val();
+                if (est) {
+                    injectDataToFormElements(est);
+                    showToast(`📦 Sukses Mengunduh Berkas ${nopol} dari Firebase Cloud Database!`);
+                } else {
+                    alert(`❌ Berkas Online untuk Nopol ${nopol} tidak ditemukan pada Estimasi 2.`);
+                }
+            }, { onlyOnce: true });
+        } else {
+            alert('Koneksi Modul Firebase Realtime Database bermasalah.');
+        }
     }
 
     function injectDataToFormElements(est) {
@@ -1179,31 +1322,27 @@
 
         const jasaBody = document.querySelector('#table-jasa tbody');
         jasaBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
-        if (est.jasa) {
-            est.jasa.forEach(j => {
-                addRow('table-jasa');
-                const row = jasaBody.querySelector('tr:nth-last-child(3)');
-                row.querySelector('.qty-input').value = j.qty;
-                row.querySelector('.price-input').value = j.price;
-                row.querySelector('.item-name').value = j.name;
-                if(j.disc) row.querySelector('.disc-input').value = j.disc;
-                if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
-            });
-        }
+        est.jasa.forEach(j => {
+            addRow('table-jasa');
+            const row = jasaBody.querySelector('tr:nth-last-child(3)');
+            row.querySelector('.qty-input').value = j.qty;
+            row.querySelector('.price-input').value = j.price;
+            row.querySelector('.item-select').value = j.name;
+            if(j.disc) row.querySelector('.disc-input').value = j.disc;
+            if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
+        });
 
         const partBody = document.querySelector('#table-part tbody');
         partBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
-        if (est.part) {
-            est.part.forEach(p => {
-                addRow('table-part');
-                const row = partBody.querySelector('tr:nth-last-child(3)');
-                row.querySelector('.qty-input').value = p.qty;
-                row.querySelector('.price-input').value = p.price;
-                row.querySelector('.item-name').value = p.name;
-                if(p.disc) row.querySelector('.disc-input').value = p.disc;
-                if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
-            });
-        }
+        est.part.forEach(p => {
+            addRow('table-part');
+            const row = partBody.querySelector('tr:nth-last-child(3)');
+            row.querySelector('.qty-input').value = p.qty;
+            row.querySelector('.price-input').value = p.price;
+            row.querySelector('.item-name').value = p.name;
+            if(p.disc) row.querySelector('.disc-input').value = p.disc;
+            if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
+        });
 
         initDefaultLainTable();
         const lainRows = document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)');
@@ -1230,7 +1369,7 @@
             const li = document.createElement('li');
             li.className = 'storage-item';
             li.innerHTML = `
-                <span><strong>${est.nopol}</strong></span>
+                <span><strong>${est.nopol}</strong> (${est.date})</span>
                 <div style="display:flex; gap:6px;">
                     <button class="btn btn-load" onclick="loadLocalEstimation('${est.nopol}')">Buka</button>
                     <button class="btn btn-delete" onclick="deleteEstimation('${est.nopol}')">Hapus</button>
@@ -1266,49 +1405,27 @@
         });
     }
 
-    function clearAllDatabase() { 
-        if (confirm('Hapus kustom DB online & lokal?')) { 
-            localStorage.removeItem('bengkel_master_db'); 
-            if (window.db && window.dbRef && window.dbRemove) window.dbRemove(window.dbRef(window.db, 'master_database_v2')); 
-            syncMasterDatabase(); 
-            renderMasterTable(); 
-            updateAllDropdowns(); 
-            initDefaultLainTable(); 
-        } 
+    function resetFormToNew() {
+        if (confirm('Kosongkan form dan buat estimasi baru?')) {
+            document.getElementById('nopol').value = '';
+            document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+            document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+            addRow('table-jasa');
+            addRow('table-part');
+            initDefaultLainTable();
+            showToast('✨ Form Kembali Bersih!');
+        }
     }
-    
-    function downloadPDF() { window.print(); }
-    
-    function resetFormToNew() { 
-        document.getElementById('nopol').value = ''; 
-        document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove()); 
-        document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove()); 
-        addRow('table-jasa'); 
-        addRow('table-part'); 
-        initDefaultLainTable(); 
+
+    function downloadPDF() {
+        window.print();
     }
 
     window.onload = function() {
         loadStorageList();
-        syncMasterDatabase(); 
-        renderMasterTable(); 
-        updateAllDropdowns(); 
+        renderMasterTable();
+        updateAllDropdowns();
         initDefaultLainTable(); 
-        setTimeout(() => {
-            if (window.db && window.dbRef && window.dbOnValue) {
-                window.dbOnValue(window.dbRef(window.db, 'master_database_v2'), (snapshot) => {
-                    const cloudData = snapshot.val();
-                    if (cloudData) {
-                        let parsedCloudArray = Object.values(cloudData);
-                        masterDatabase = [...lockedLainItems, ...parsedCloudArray];
-                        localStorage.setItem('bengkel_master_db', JSON.stringify(parsedCloudArray));
-                        renderMasterTable(); 
-                        updateAllDropdowns(); 
-                        initDefaultLainTable();
-                    }
-                });
-            }
-        }, 1000);
     };
 </script>
 </body>
