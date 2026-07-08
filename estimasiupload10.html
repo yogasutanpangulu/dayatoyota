@@ -481,15 +481,15 @@
     </table>
 
     <div class="table-title">
-    <span></span>
-    <button class="btn btn-add" onclick="addRow('table-lain')">+ Tambah Kolom</button>
-</div>
+        <span>KOLOM OPL / LAIN-LAIN</span>
+        <button class="btn btn-add" onclick="addRow('table-lain')">+ Tambah Kolom</button>
+    </div>
     <table id="table-lain">
         <thead>
             <tr>
                 <th style="width: 8%;" class="text-center">QTY</th>
                 <th style="width: 22%;">HARGA / PCS</th>
-                <th style="width: 32%;"></th>
+                <th style="width: 32%;">DESKRIPSI OPL</th>
                 <th style="width: 16%; color: #d32f2f;">DISCOUNT</th>
                 <th style="width: 17%;">TOTAL</th>
                 <th style="width: 5%;" class="text-center">Aksi</th>
@@ -564,15 +564,15 @@
                     <td class="grand-total-value"><div class="currency-box"><span>Rp</span><span id="grand-total">0</span></div></td>
                 </tr>
                 <tr>
-    <td class="grand-total-label" style="vertical-align: middle;">TOTAL POTONGAN DISCOUNT</td>
-    <td class="grand-total-value">
-        <div class="currency-box">
-            <span style="font-weight: bold; color: #d32f2f;">Rp</span>
-            <input type="text" id="main-discount" class="price-input" placeholder="0" style="width:110px; font-weight: bold; color: #d32f2f;" readonly>
-            <span style="font-size: 8.5pt; color: #666; font-weight: normal; margin-left: 5px;">(Otomatis Jasa+Part)</span>
-        </div>
-    </td>
-</tr>
+                    <td class="grand-total-label" style="vertical-align: middle;">TOTAL POTONGAN DISCOUNT</td>
+                    <td class="grand-total-value">
+                        <div class="currency-box">
+                            <span style="font-weight: bold; color: #d32f2f;">Rp</span>
+                            <input type="text" id="main-discount" class="price-input" placeholder="0" style="width:110px; font-weight: bold; color: #d32f2f;" readonly>
+                            <span style="font-size: 8.5pt; color: #666; font-weight: normal; margin-left: 5px;">(Otomatis Jasa+OPL+Part)</span>
+                        </div>
+                    </td>
+                </tr>
                 <tr>
                     <td class="grand-total-label">TOTAL SETELAH DISKON</td>
                     <td class="grand-total-value double-underline"><div class="currency-box"><span>Rp</span><span id="final-total">0</span></div></td>
@@ -750,8 +750,12 @@
             subtotalLain += grossTotal;
             discTotalLain += rowDiscount;
         });
-        document.getElementById('subtotal-lain').innerText = subtotalLain.toLocaleString('id-ID');
-        document.getElementById('discount-total-lain').innerText = discTotalLain.toLocaleString('id-ID');
+        
+        const subtotalLainElem = document.getElementById('subtotal-lain');
+        if (subtotalLainElem) subtotalLainElem.innerText = subtotalLain.toLocaleString('id-ID');
+        
+        const discountTotalLainElem = document.getElementById('discount-total-lain');
+        if (discountTotalLainElem) discountTotalLainElem.innerText = discTotalLain.toLocaleString('id-ID');
 
         // Perhitungan Tabel Part / Bahan
         document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
@@ -780,11 +784,11 @@
         const grandTotalGross = subtotalJasa + subtotalLain + subtotalPart;
         document.getElementById('grand-total').innerText = grandTotalGross.toLocaleString('id-ID');
 
-        const totalpotongandiscount = discTotalJasa + discTotalPart + discTotalLain;
-document.getElementById('main-discount').value = totalpotongandiscount.toLocaleString('id-ID');
+        // Total Potongan Discount Akumulasi (Jasa + OPL + Part)
+        const totalpotongandiscount = discTotalJasa + discTotalLain + discTotalPart;
+        document.getElementById('main-discount').value = totalpotongandiscount.toLocaleString('id-ID');
 
-        const totalSemuaPotongan = discTotalJasa + discTotalLain + discTotalPart;
-        const finalTotal = Math.max(0, grandTotalGross - totalSemuaPotongan);
+        const finalTotal = Math.max(0, grandTotalGross - totalpotongandiscount);
         document.getElementById('final-total').innerText = finalTotal.toLocaleString('id-ID');
 
         compilePartCodes();
@@ -1013,7 +1017,7 @@ document.getElementById('main-discount').value = totalpotongandiscount.toLocaleS
         const totalTr = document.createElement('tr');
         totalTr.className = 'row-total';
         totalTr.innerHTML = `
-            <td colspan="4" class="row-total-label">JUMLAH</td>
+            <td colspan="4" class="row-total-label">JUMLAH OPL</td>
             <td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td>
             <td></td>
         `;
@@ -1022,7 +1026,7 @@ document.getElementById('main-discount').value = totalpotongandiscount.toLocaleS
         const discTr = document.createElement('tr');
         discTr.className = 'row-discount';
         discTr.innerHTML = `
-            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td>
+            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT OPL (-)</td>
             <td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td>
             <td></td>
         `;
@@ -1176,7 +1180,7 @@ document.getElementById('main-discount').value = totalpotongandiscount.toLocaleS
                 if (columns.length <= Math.max(catIdx, nameIdx, priceIdx)) continue;
 
                 let category = columns[catIdx].trim().toLowerCase();
-                if (category === 'lain') category = 'opl'; // Penyesuaian otomatis jika file csv lama masih memakai nama 'lain'
+                if (category === 'lain') category = 'opl'; 
                 
                 const name = columns[nameIdx].trim().replace(/^["']|["']$/g, '').trim(); 
                 let price = parseFloat(columns[priceIdx].trim().replace(/[^0-9.-]/g, '')) || 0;
@@ -1241,7 +1245,6 @@ document.getElementById('main-discount').value = totalpotongandiscount.toLocaleS
         });
     }
 
-    // --- INTEGRASI STRUKTUR CLOUD FIREBASE ---
     function saveEstimation() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
         if (!nopol) { alert('Harap isi NOMOR POLISI sebelum menyimpan!'); return; }
