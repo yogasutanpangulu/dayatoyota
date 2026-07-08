@@ -452,7 +452,7 @@
                 <td>
                     <div class="input-with-copy">
                         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <select class="item-select" data-type="jasa" onchange="autoFillPrice(this)"></select>
+                        <input type="text" class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()">
                     </div>
                 </td>
                 <td>
@@ -489,7 +489,7 @@
             <tr>
                 <th style="width: 8%;" class="text-center">QTY</th>
                 <th style="width: 22%;">HARGA / PCS</th>
-                <th style="width: 32%;">KETERANGAN</th>
+                <th style="width: 32%;"></th>
                 <th style="width: 16%; color: #d32f2f;">DISCOUNT</th>
                 <th style="width: 17%;">TOTAL</th>
                 <th style="width: 5%;" class="text-center">Aksi</th>
@@ -528,7 +528,7 @@
                 <td>
                     <div class="input-with-copy">
                         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
+                        <input type="text" class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
                     </div>
                 </td>
                 <td>
@@ -606,7 +606,7 @@
 
     <div class="master-panel">
         <div class="master-header">
-            <h3 style="margin:0; font-size:11pt; color: #333;">⚙️ Panel Master Database (Jasa & Part)</h3>
+            <h3 style="margin:0; font-size:11pt; color: #333;">⚙️ Panel Master Database (Jasa, OPL & Part)</h3>
             <input type="text" id="db-search-input" class="search-box" placeholder="Cari di katalog database..." oninput="filterMasterTable()" style="width: 220px;">
         </div>
         
@@ -614,7 +614,7 @@
             <div style="width: 100%; display: flex; gap: 10px; margin-bottom: 5px;">
                 <select id="db-category" style="width: 130px;">
                     <option value="jasa">Kategori: JASA</option>
-                    <option value="lain">Kategori: LAIN-LAIN</option>
+                    <option value="opl">Kategori: OPL</option>
                     <option value="part">Kategori: PART / BAHAN</option>
                 </select>
                 <input type="text" id="db-name" placeholder="Nama Barang / Jasa..." style="flex:2;">
@@ -632,7 +632,7 @@
         </div>
 
         <div style="font-size: 8.5pt; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 6px; border-radius: 4px;">
-            💡 <strong>Petunjuk Part:</strong> Klik langsung pada baris tabel master bertanda <strong>[Klik untuk Pilih]</strong> di bawah untuk memilih part tanpa memindahkan layar kerja Anda! Baris hitam tebal berfungsi sebagai pembatas grup.
+            💡 <strong>Petunjuk:</strong> Klik langsung pada baris tabel master JASA atau PART bertanda <strong>[Klik untuk Pilih]</strong> di bawah untuk memasukkan item otomatis! Baris hitam tebal berfungsi sebagai pembatas grup.
         </div>
 
         <table class="master-table">
@@ -651,13 +651,13 @@
 </div>
 
 <script>
-    // 5 ITEM PENTING ANDA YANG SEMPAT HILANG KINI TELAH DIKEMBALIKAN UTUH & TETAP TERKUNCI OLEH SISTEM
+    // 5 ITEM PENTING TETAP DIPERTAHANKAN DAN BERKATEGORI OPL
     const lockedLainItems = [
-        { id: 'L01', type: 'lain', name: 'SPOORING P', price: 185000, code: '' },
-        { id: 'L02', type: 'lain', name: 'GREASING STEERING RACK', price: 25000, code: '' },
-        { id: 'L03', type: 'lain', name: 'CHAMBER CATALYTIC CLEANER', price: 235000, code: '' },
-        { id: 'L04', type: 'lain', name: 'CHAMBER CLEAN', price: 215000, code: '' },
-        { id: 'L05', type: 'lain', name: 'EVAPORATOR CLEANER', price: 361000, code: '' }
+        { id: 'L01', type: 'opl', name: 'SPOORING P', price: 185000, code: '' },
+        { id: 'L02', type: 'opl', name: 'GREASING STEERING RACK', price: 25000, code: '' },
+        { id: 'L03', type: 'opl', name: 'CHAMBER CATALYTIC CLEANER', price: 235000, code: '' },
+        { id: 'L04', type: 'opl', name: 'CHAMBER CLEAN', price: 215000, code: '' },
+        { id: 'L05', type: 'opl', name: 'EVAPORATOR CLEANER', price: 361000, code: '' }
     ]; 
     
     let masterDatabase = [];
@@ -729,7 +729,7 @@
         document.getElementById('subtotal-jasa').innerText = subtotalJasa.toLocaleString('id-ID');
         document.getElementById('discount-total-jasa').innerText = discTotalJasa.toLocaleString('id-ID');
 
-        // Perhitungan Tabel Lain-Lain
+        // Perhitungan Tabel Lain-Lain (OPL)
         document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
@@ -810,17 +810,19 @@
         const newRow = document.createElement('tr');
         let inputTdHtml = '';
         
-        if (type === 'part') {
+        if (type === 'part' || type === 'jasa') {
+            const placeholderText = type === 'jasa' ? 'Pilih langsung dari Master Data JASA di bawah...' : 'Pilih langsung dari Master Data di bawah...';
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <input type="text" class="item-name" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
+                    <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
                 </div>`;
         } else {
+            // Drop-down khusus OPL
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <select class="item-select" data-type="${type}" onchange="autoFillPrice(this)"></select>
+                    <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
                 </div>`;
         }
 
@@ -855,7 +857,7 @@
             tbody.appendChild(newRow);
         }
         
-        if (type !== 'part') updateAllDropdowns();
+        if (type === 'lain') updateAllDropdowns();
         calculateAll();
     }
 
@@ -873,7 +875,7 @@
         const priceInput = row.querySelector('.price-input');
         
         if (selectElement.value === "CUSTOM") {
-            const customName = prompt("Masukkan nama Jasa / Keterangan manual:");
+            const customName = prompt("Masukkan nama OPL manual:");
             if (customName) {
                 const newOpt = document.createElement('option');
                 newOpt.value = customName;
@@ -894,10 +896,11 @@
     }
 
     function handleMasterRowClick(name, price, type) {
-        if (type !== 'part') return;
+        if (type !== 'part' && type !== 'jasa') return;
         if (name.startsWith('>>>')) return;
 
-        const table = document.getElementById('table-part');
+        const tableId = type === 'jasa' ? 'table-jasa' : 'table-part';
+        const table = document.getElementById(tableId);
         const rows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
         let targetRow = null;
 
@@ -910,7 +913,7 @@
         }
 
         if (!targetRow) {
-            addRow('table-part');
+            addRow(tableId);
             const updatedRows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
             targetRow = updatedRows[updatedRows.length - 1];
         }
@@ -921,7 +924,7 @@
         targetRow.style.backgroundColor = "#e8f5e9";
         setTimeout(() => targetRow.style.backgroundColor = "transparent", 800);
 
-        showToast(`✅ Part Terpilih: ${name}`);
+        showToast(`✅ ${type.toUpperCase()} Terpilih: ${name}`);
         calculateAll();
     }
 
@@ -931,12 +934,14 @@
             const currentType = select.getAttribute('data-type');
             const currentValue = select.value; 
             
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten --</option>';
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
             optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
             
             const filteredData = masterDatabase.filter(item => item.type === currentType);
             filteredData.forEach(item => {
-                if (!item.name.startsWith('>>>')) {
+                if (item.name.startsWith('>>>') && item.name.endsWith('<<<')) {
+                    optionsHtml += `<option value="" disabled style="background:#000; color:#fff; font-weight:bold; text-align:center;">${item.name}</option>`;
+                } else {
                     optionsHtml += `<option value="${item.name}" data-price="${item.price}">${item.name}</option>`;
                 }
             });
@@ -955,7 +960,6 @@
         }
         tbody.innerHTML = '';
         
-        // Memastikan item bawaan Anda selalu ter-render otomatis di tabel utama Lain-Lain saat dimuat
         lockedLainItems.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -972,7 +976,7 @@
                 <td>
                     <div class="input-with-copy">
                         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <select class="item-select" data-type="lain" onchange="autoFillPrice(this)"></select>
+                        <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
                     </div>
                 </td>
                 <td>
@@ -990,13 +994,16 @@
             tbody.appendChild(tr);
             
             const selectEl = tr.querySelector('.item-select');
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten --</option>';
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
             optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
             
-            // Gabungkan item bawaan dengan data yang tersimpan di katalog pencarian bawah
-            const defaultItems = masterDatabase.filter(d => d.type === 'lain' && !d.name.startsWith('>>>'));
+            const defaultItems = masterDatabase.filter(d => d.type === 'opl');
             defaultItems.forEach(d => {
-                optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
+                if (d.name.startsWith('>>>') && d.name.endsWith('<<<')) {
+                    optionsHtml += `<option value="" disabled style="background:#000; color:#fff; font-weight:bold; text-align:center;">${d.name}</option>`;
+                } else {
+                    optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
+                }
             });
             selectEl.innerHTML = optionsHtml;
             selectEl.value = item.name;
@@ -1005,7 +1012,7 @@
         const totalTr = document.createElement('tr');
         totalTr.className = 'row-total';
         totalTr.innerHTML = `
-            <td colspan="4" class="row-total-label">JUMLAH LAIN-LAIN</td>
+            <td colspan="4" class="row-total-label">JUMLAH OPL</td>
             <td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td>
             <td></td>
         `;
@@ -1014,7 +1021,7 @@
         const discTr = document.createElement('tr');
         discTr.className = 'row-discount';
         discTr.innerHTML = `
-            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT LAIN-LAIN (-)</td>
+            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT OPL (-)</td>
             <td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td>
             <td></td>
         `;
@@ -1086,7 +1093,7 @@
             } else {
                 const codeDisplay = (item.type === 'part' && item.code) ? item.code : '-';
                 
-                if (item.type === 'part') {
+                if (item.type === 'part' || item.type === 'jasa') {
                     tr.className = "clickable-row";
                     tr.setAttribute('onclick', `handleMasterRowClick("${item.name}", ${item.price}, "${item.type}")`);
                 }
@@ -1097,7 +1104,7 @@
                     <td>
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span>${item.name} ${isLocked ? '📌' : ''}</span>
-                            ${item.type === 'part' ? '<span class="badge-click">Klik untuk Pilih</span>' : ''}
+                            ${(item.type === 'part' || item.type === 'jasa') ? '<span class="badge-click">Klik untuk Pilih</span>' : ''}
                         </div>
                     </td>
                     <td><span style="font-family:monospace; font-weight:bold; color:#555;">${codeDisplay}</span></td>
@@ -1167,14 +1174,16 @@
                 const columns = lines[i].split(separator);
                 if (columns.length <= Math.max(catIdx, nameIdx, priceIdx)) continue;
 
-                const category = columns[catIdx].trim().toLowerCase();
+                let category = columns[catIdx].trim().toLowerCase();
+                if (category === 'lain') category = 'opl'; // Penyesuaian otomatis jika file csv lama masih memakai nama 'lain'
+                
                 const name = columns[nameIdx].trim().replace(/^["']|["']$/g, '').trim(); 
                 let price = parseFloat(columns[priceIdx].trim().replace(/[^0-9.-]/g, '')) || 0;
                 let code = codeIdx !== -1 && columns[codeIdx] ? columns[codeIdx].trim().replace(/^["']|["']$/g, '').trim() : "";
 
-                const isSystemLocked = lockedLainItems.some(lock => lock.name.toLowerCase() === name.toLowerCase() && category === 'lain');
+                const isSystemLocked = lockedLainItems.some(lock => lock.name.toLowerCase() === name.toLowerCase() && category === 'opl');
 
-                if (['jasa', 'part', 'lain'].includes(category) && name && !isSystemLocked) {
+                if (['jasa', 'part', 'opl'].includes(category) && name && !isSystemLocked) {
                     savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === category));
                     savedData.push({ id: Date.now() + i, type: category, name: name, price: price, code: code });
                     successCount++;
@@ -1246,7 +1255,7 @@
             estimationData.jasa.push({
                 qty: row.querySelector('.qty-input').value,
                 price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-select').value,
+                name: row.querySelector('.item-name').value,
                 disc: row.querySelector('.disc-input').value,
                 discType: row.querySelector('.disc-type-select').value
             });
@@ -1270,13 +1279,11 @@
             });
         });
 
-        // 1. Simpan Lokal Device (Mencegah kehilangan berkas)
         let savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
         savedEstimations = savedEstimations.filter(e => e.nopol !== nopol);
         savedEstimations.push(estimationData);
         localStorage.setItem('bengkel_estimations', JSON.stringify(savedEstimations));
 
-        // 2. Unggah/Kirim data ke Cloud Firebase default-rtdb (Node: estimasi_records_v2)
         if (window.db && window.dbRef && window.dbSet) {
             const cleanKey = nopol.replace(/[\.\#\$\[\]]/g, "-");
             const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
@@ -1294,7 +1301,6 @@
         loadStorageList();
     }
 
-    // Fungsi Pengambilan Berkas Online dari Firebase Cloud Realtime Database
     function fetchFromCloudDatabase() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
         if (!nopol) { alert('Masukkan Nomor Polisi terlebih dahulu untuk melacak data cloud!'); return; }
@@ -1327,7 +1333,7 @@
             const row = jasaBody.querySelector('tr:nth-last-child(3)');
             row.querySelector('.qty-input').value = j.qty;
             row.querySelector('.price-input').value = j.price;
-            row.querySelector('.item-select').value = j.name;
+            row.querySelector('.item-name').value = j.name;
             if(j.disc) row.querySelector('.disc-input').value = j.disc;
             if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
         });
