@@ -397,13 +397,16 @@
     }
 
     function sendWA(id) {
-        const d = allData[id];
-        if(!d.tel) return alert('No HP kosong');
-        const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
-        const namaBold = d.nama.toUpperCase();
-        const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih %F0%9F%99%8F_`;
-        window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
-    }
+    const d = allData[id];
+    if(!d.tel) return alert('No HP kosong');
+    const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
+    const namaBold = d.nama.toUpperCase();
+    
+    // Menggunakan Unicode \u{1F64F} sebagai pengganti aman untuk emoji 🙏
+    const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih \u{1F64F}_`;
+    
+    window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
+}
 
     function deleteData(id) {
         if(confirm('Hapus data ini?')) {
