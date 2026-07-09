@@ -403,7 +403,7 @@
     const namaBold = d.nama.toUpperCase();
     
     // Menggunakan Unicode \u{1F64F} sebagai pengganti aman untuk emoji 🙏
-    const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih \u{1F64F}_`;
+    const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih \u{1F64F}`;
     
     window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
 }
