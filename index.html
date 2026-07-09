@@ -51,7 +51,6 @@
         .row-TINGGAL { background-color: #e0f2fe !important; }
         .row-normal { background-color: white; }
 
-        /* KEMBALIKAN STYLE SEPARATOR ASLI AGAR STRUKTUR TABEL TIDAK RUSAK */
         .sep-menginap { background: #fee2e2 !important; color: #b91c1c !important; border-left: 6px solid #ef4444 !important; font-weight: bold; padding: 10px !important; }
         .sep-today { background: #e2e8f0 !important; color: #475569 !important; border-left: 6px solid #64748b !important; font-weight: bold; padding: 10px !important; }
 
@@ -71,7 +70,7 @@
         #iframe-container { width: 100%; height: calc(100vh - 100px); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Style Counter Ringkas Menyamping diletakkan di Top Bar/Header */
+        /* Style Counter Ringkas Menyamping di Header */
         .header-counter-box { display: flex; flex-direction: row; gap: 6px; flex-wrap: wrap; align-items: center; }
         .job-counter-badge { background: rgba(255, 255, 255, 0.15); color: #ffffff; padding: 3px 8px; border-radius: 6px; font-size: 11px; border: 1px solid rgba(255,255,255,0.2); }
     </style>
@@ -82,7 +81,6 @@
     <header>
         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
             <h2 style="margin:0; font-size: 18px;">🛠️ Daya Toyota Cakung Service</h2>
-            <!-- Wadah Live Counter Khusus Penerimaan Hari Ini Berjejer Rapi ke Samping -->
             <div id="live-job-counter" class="header-counter-box"></div>
         </div>
         <div id="display-date" style="font-weight: bold; font-size: 14px;">📅 --.--.----</div>
@@ -152,7 +150,6 @@
 </div>
 
 <script>
-    // --- VARIABEL GLOBAL UTAMA ---
     const d = new Date();
     const TODAY_STR = d.toISOString().split('T')[0];
     const TODAY_DISPLAY = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
@@ -164,7 +161,6 @@
 
     document.getElementById('display-date').innerText = '📅 ' + TODAY_DISPLAY;
 
-    // --- FUNGSI NAVIGASI PINDAH HALAMAN ---
     window.showPage = function(page) {
         if(page === 'estimasi') {
             document.getElementById('page-dashboard').style.display = 'none';
@@ -181,7 +177,6 @@
         }
     }
 
-    // --- SINKRONISASI FIREBASE ---
     window.onload = () => {
         const dataRef = window.dbRef(window.db, 'services');
         window.dbOnValue(dataRef, (snapshot) => {
@@ -266,7 +261,6 @@
         return html;
     }
 
-    // Fungsi update counter khusus penerimaan hari ini di area top-bar
     function updateTopBarCounter(hariIniItems) {
         let counts = {};
         JOB_LIST.forEach(j => counts[j] = 0);
@@ -301,10 +295,10 @@
         tbody.innerHTML = '';
         let items = Object.values(allData);
 
+        // KEMBALIKAN LOGIKA FILTER ASLI
         let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
         let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
 
-        // Update live counter di bagian atas
         updateTopBarCounter(hariIni);
 
         if (mode === 'today') {
