@@ -36,12 +36,13 @@
             padding: 12px 20px; border-radius: 12px; color: white;
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            flex-wrap: wrap; gap: 10px;
         }
         .actions { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
         button { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; }
         .btn-add { background: var(--primary); color: white; }
-        .btn-estimasi { background: #764ba2; color: white; }
-        .btn-estimasi-2 { background: #d946ef; color: white; }
+        .btn-estimasi { background: #764ba2; color: white; } 
+        .btn-estimasi-2 { background: #d946ef; color: white; } 
         .btn-date { background: white; color: #334155; border: 1px solid #cbd5e1; }
         .btn-download { background: #10b981; color: white; }
         
@@ -50,21 +51,9 @@
         .row-TINGGAL { background-color: #e0f2fe !important; }
         .row-normal { background-color: white; }
 
+        /* KEMBALIKAN STYLE SEPARATOR ASLI AGAR STRUKTUR TABEL TIDAK RUSAK */
         .sep-menginap { background: #fee2e2 !important; color: #b91c1c !important; border-left: 6px solid #ef4444 !important; font-weight: bold; padding: 10px !important; }
-        
-        /* Layout Flexbox agar Judul dan Semua Badge rata menyamping dari kiri ke kanan */
-        .sep-today { 
-            background: #e2e8f0 !important; 
-            color: #475569 !important; 
-            border-left: 6px solid #64748b !important; 
-            font-weight: bold; 
-            padding: 10px !important; 
-            display: flex; 
-            align-items: center; 
-            justify-content: flex-start; 
-            gap: 20px; 
-            white-space: nowrap;
-        }
+        .sep-today { background: #e2e8f0 !important; color: #475569 !important; border-left: 6px solid #64748b !important; font-weight: bold; padding: 10px !important; }
 
         .table-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         table { width: 100%; min-width: 1300px; border-collapse: collapse; }
@@ -82,16 +71,20 @@
         #iframe-container { width: 100%; height: calc(100vh - 100px); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Style Container Counter lurus menyamping tanpa menekuk kebawah */
-        .job-counter-wrapper { display: flex; flex-direction: row; gap: 8px; font-size: 12px; font-weight: normal; align-items: center; }
-        .job-counter-badge { background: #ffffff; color: #1e293b; padding: 2px 8px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block; }
+        /* Style Counter Ringkas Menyamping diletakkan di Top Bar/Header */
+        .header-counter-box { display: flex; flex-direction: row; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .job-counter-badge { background: rgba(255, 255, 255, 0.15); color: #ffffff; padding: 3px 8px; border-radius: 6px; font-size: 11px; border: 1px solid rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
 
 <div id="page-dashboard">
     <header>
-        <h2 style="margin:0; font-size: 18px;">🛠️ Daya Toyota Cakung Service</h2>
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <h2 style="margin:0; font-size: 18px;">🛠️ Daya Toyota Cakung Service</h2>
+            <!-- Wadah Live Counter Khusus Penerimaan Hari Ini Berjejer Rapi ke Samping -->
+            <div id="live-job-counter" class="header-counter-box"></div>
+        </div>
         <div id="display-date" style="font-weight: bold; font-size: 14px;">📅 --.--.----</div>
     </header>
 
@@ -169,7 +162,6 @@
     let allData = {};
     const JOB_LIST = ["SBER", "SBEF", "GRR", "GRF", "TWCR", "TWCF", "SBIR", "SBIF"];
 
-    // Set tampilan tanggal awal saat aplikasi dimuat
     document.getElementById('display-date').innerText = '📅 ' + TODAY_DISPLAY;
 
     // --- FUNGSI NAVIGASI PINDAH HALAMAN ---
@@ -274,7 +266,8 @@
         return html;
     }
 
-    function generateCounterHTML(hariIniItems) {
+    // Fungsi update counter khusus penerimaan hari ini di area top-bar
+    function updateTopBarCounter(hariIniItems) {
         let counts = {};
         JOB_LIST.forEach(j => counts[j] = 0);
         
@@ -284,12 +277,13 @@
             }
         });
 
-        let html = '<div class="job-counter-wrapper">';
+        let html = '';
         JOB_LIST.forEach(j => {
             html += `<span class="job-counter-badge"><b>${j}:</b> ${counts[j]}</span>`;
         });
-        html += '</div>';
-        return html;
+        
+        const target = document.getElementById('live-job-counter');
+        if(target) target.innerHTML = html;
     }
 
     function render() {
@@ -310,25 +304,27 @@
         let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
         let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
 
+        // Update live counter di bagian atas
+        updateTopBarCounter(hariIni);
+
         if (mode === 'today') {
             if (menginap.length > 0) {
                 menginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
                 let lastDate = "";
                 menginap.forEach((x, i) => {
                     if (x.tanggalMasuk !== lastDate) {
-                        addSeparator(tbody, `<span>📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}</span>`, "sep-menginap");
+                        addSeparator(tbody, `📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}`, "sep-menginap");
                         lastDate = x.tanggalMasuk;
                     }
                     addRow(tbody, x, i + 1);
                 });
             }
             
-            const counterHTML = generateCounterHTML(hariIni);
-            addSeparator(tbody, `<span>🚗 PENERIMAAN HARI INI</span> ${counterHTML}`, "sep-today");
+            addSeparator(tbody, "🚗 PENERIMAAN HARI INI", "sep-today");
             hariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
         } else {
             let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
-            addSeparator(tbody, `<span>🔍 DATA TANGGAL: ${selectedDate}</span>`, "");
+            addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
             histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
         }
 
@@ -341,9 +337,9 @@
         }
     }
 
-    function addSeparator(tbody, innerHTMLContent, customClass) {
+    function addSeparator(tbody, text, customClass) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="12" class="group-separator ${customClass}">${innerHTMLContent}</td>`;
+        tr.innerHTML = `<td colspan="12" class="group-separator ${customClass}">${text}</td>`;
         tbody.appendChild(tr);
     }
 
@@ -426,7 +422,6 @@
         const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
         const namaBold = d.nama.toUpperCase();
         
-        // Menggunakan format Unicode \u{1F64F} yang stabil untuk browser PC maupun handphone
         const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih \u{1F64F}_`;
         
         window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
