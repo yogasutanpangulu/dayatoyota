@@ -496,13 +496,14 @@
         </tbody>
     </table>
 
-    <div class="table-title">
-        <span>KOLOM OPL / LAIN-LAIN</span>
+        <div class="table-title">
+        <span></span>
         <button class="btn btn-add" onclick="addRow('table-lain')">+ Tambah Kolom</button>
     </div>
     <table id="table-lain">
         <thead>
             <tr>
+
                 <th style="width: 8%;" class="text-center">QTY</th>
                 <th style="width: 22%;">HARGA / PCS</th>
                 <th style="width: 32%;">DESKRIPSI OPL</th>
@@ -1032,10 +1033,10 @@
         `;
         tbody.appendChild(totalTr);
 
-        const discTr = document.createElement('tr');
+                const discTr = document.createElement('tr');
         discTr.className = 'row-discount';
         discTr.innerHTML = `
-            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT OPL (-)</td>
+            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td>
             <td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td>
             <td></td>
         `;
