@@ -159,8 +159,21 @@
 </div>
 
 <script>
-    // --- FUNGSI PINDAH HALAMAN ---
-    function showPage(page) {
+    // --- VARIABEL GLOBAL UTAMA ---
+    const d = new Date();
+    const TODAY_STR = d.toISOString().split('T')[0];
+    const TODAY_DISPLAY = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    
+    let mode = 'today';
+    let selectedDate = null;
+    let allData = {};
+    const JOB_LIST = ["SBER", "SBEF", "GRR", "GRF", "TWCR", "TWCF", "SBIR", "SBIF"];
+
+    // Set tampilan tanggal awal saat aplikasi dimuat
+    document.getElementById('display-date').innerText = '📅 ' + TODAY_DISPLAY;
+
+    // --- FUNGSI NAVIGASI PINDAH HALAMAN ---
+    window.showPage = function(page) {
         if(page === 'estimasi') {
             document.getElementById('page-dashboard').style.display = 'none';
             document.getElementById('page-estimasi').style.display = 'block';
@@ -176,16 +189,7 @@
         }
     }
 
-    const d = new Date();
-    const TODAY_STR = d.toISOString().split('T')[0];
-    const TODAY_DISPLAY = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-    document.getElementById('display-date').innerText = '📅 ' + TODAY_DISPLAY;
-    
-    let mode = 'today';
-    let selectedDate = null;
-    let allData = {};
-    const JOB_LIST = ["SBER", "SBEF", "GRR", "GRF", "TWCR", "TWCF", "SBIR", "SBIF"];
-
+    // --- SINKRONISASI FIREBASE ---
     window.onload = () => {
         const dataRef = window.dbRef(window.db, 'services');
         window.dbOnValue(dataRef, (snapshot) => {
@@ -195,7 +199,7 @@
         setInterval(render, 30000);
     };
 
-    function addNewRow() {
+    window.addNewRow = function() {
         const id = Date.now().toString();
         window.dbSet(window.dbRef(window.db, 'services/' + id), {
             id: id, tanggalMasuk: TODAY_STR, tanggalDiserahkan: "",
@@ -204,7 +208,7 @@
         });
     }
 
-    function updateData(id, field, value) {
+    window.updateData = function(id, field, value) {
         const updates = {};
         updates[field] = value;
         if (field === 'diserahkan') {
@@ -217,7 +221,7 @@
         window.dbUpdate(window.dbRef(window.db, 'services/' + id), updates);
     }
 
-    function handlePaste(e, id) {
+    window.handlePaste = function(e, id) {
         e.preventDefault();
         const raw = e.clipboardData.getData('text').trim();
         let parts = raw.split('\t');
@@ -230,7 +234,7 @@
         });
     }
 
-    function copyRowData(id) {
+    window.copyRowData = function(id) {
         const data = allData[id];
         if (!data) return;
         
@@ -262,7 +266,6 @@
         return html;
     }
 
-    // Dropdown job baru sesuai permintaan
     function getJobOptions(selected) {
         let html = '<option value="">- Job -</option>';
         JOB_LIST.forEach(job => {
@@ -271,7 +274,6 @@
         return html;
     }
 
-    // Hitung job menyamping lurus horizontal
     function generateCounterHTML(hariIniItems) {
         let counts = {};
         JOB_LIST.forEach(j => counts[j] = 0);
@@ -399,7 +401,7 @@
         tbody.appendChild(tr);
     }
 
-    function downloadData() {
+    window.downloadData = function() {
         const start = document.getElementById('startDl').value;
         const end = document.getElementById('endDl').value;
         if(!start || !end) return alert('Pilih rentang tanggal download');
@@ -418,25 +420,25 @@
         a.click();
     }
 
-    function sendWA(id) {
+    window.sendWA = function(id) {
         const d = allData[id];
         if(!d.tel) return alert('No HP kosong');
         const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
         const namaBold = d.nama.toUpperCase();
         
-        // Unicode \u{1F64F} dibaca sebagai emoji 🙏 asli yang aman untuk Windows/Mac/HP
+        // Menggunakan format Unicode \u{1F64F} yang stabil untuk browser PC maupun handphone
         const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih \u{1F64F}_`;
         
         window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
-    function deleteData(id) {
+    window.deleteData = function(id) {
         if(confirm('Hapus data ini?')) {
             window.dbRemove(window.dbRef(window.db, 'services/' + id));
         }
     }
 
-    function setMode(m) {
+    window.setMode = function(m) {
         mode = m; 
         selectedDate = document.getElementById('filterDate').value; 
         render();
