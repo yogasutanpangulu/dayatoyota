@@ -51,7 +51,20 @@
         .row-normal { background-color: white; }
 
         .sep-menginap { background: #fee2e2 !important; color: #b91c1c !important; border-left: 6px solid #ef4444 !important; font-weight: bold; padding: 10px !important; }
-        .sep-today { background: #e2e8f0 !important; color: #475569 !important; border-left: 6px solid #64748b !important; font-weight: bold; padding: 10px !important; }
+        
+        /* Layout Flexbox agar Judul dan Semua Badge rata menyamping dari kiri ke kanan */
+        .sep-today { 
+            background: #e2e8f0 !important; 
+            color: #475569 !important; 
+            border-left: 6px solid #64748b !important; 
+            font-weight: bold; 
+            padding: 10px !important; 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start; 
+            gap: 20px; 
+            white-space: nowrap;
+        }
 
         .table-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         table { width: 100%; min-width: 1300px; border-collapse: collapse; }
@@ -69,9 +82,9 @@
         #iframe-container { width: 100%; height: calc(100vh - 100px); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Style Counter Job Menyamping Sejajar Row */
-        .job-counter-box { background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; }
-        .job-counter-badge { background: #f1f5f9; color: #1e293b; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        /* Style Container Counter lurus menyamping tanpa menekuk kebawah */
+        .job-counter-wrapper { display: flex; flex-direction: row; gap: 8px; font-size: 12px; font-weight: normal; align-items: center; }
+        .job-counter-badge { background: #ffffff; color: #1e293b; padding: 2px 8px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block; }
     </style>
 </head>
 <body>
@@ -86,10 +99,6 @@
         <button class="btn-estimasi" onclick="showPage('estimasi')">📊 BUKA ESTIMASI 2025</button>
         <button class="btn-estimasi-2" onclick="showPage('estimasi-2')">🚀 BUKA ESTIMASI 2</button>
         <button class="btn-add" onclick="addNewRow()">+ TAMBAH DATA</button>
-        
-        <!-- Wadah Counter Job Menyamping Sejajar di Actions Bar -->
-        <div class="job-counter-box" id="jobCounterContainer"></div>
-        
         <div style="flex-grow: 1"></div>
         <div class="download-box">
             <span style="font-size:11px; font-weight:bold">REKAP:</span>
@@ -150,6 +159,23 @@
 </div>
 
 <script>
+    // --- FUNGSI PINDAH HALAMAN ---
+    function showPage(page) {
+        if(page === 'estimasi') {
+            document.getElementById('page-dashboard').style.display = 'none';
+            document.getElementById('page-estimasi').style.display = 'block';
+            document.getElementById('page-estimasi-2').style.display = 'none';
+        } else if(page === 'estimasi-2') {
+            document.getElementById('page-dashboard').style.display = 'none';
+            document.getElementById('page-estimasi').style.display = 'none';
+            document.getElementById('page-estimasi-2').style.display = 'block';
+        } else {
+            document.getElementById('page-dashboard').style.display = 'block';
+            document.getElementById('page-estimasi').style.display = 'none';
+            document.getElementById('page-estimasi-2').style.display = 'none';
+        }
+    }
+
     const d = new Date();
     const TODAY_STR = d.toISOString().split('T')[0];
     const TODAY_DISPLAY = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
@@ -178,7 +204,6 @@
         });
     }
 
-    // Fungsi update real-time ke database Firebase
     function updateData(id, field, value) {
         const updates = {};
         updates[field] = value;
@@ -237,6 +262,7 @@
         return html;
     }
 
+    // Dropdown job baru sesuai permintaan
     function getJobOptions(selected) {
         let html = '<option value="">- Job -</option>';
         JOB_LIST.forEach(job => {
@@ -245,11 +271,8 @@
         return html;
     }
 
-    // Menghitung jumlah job hari ini secara presisi
-    function updateJobCounterDOM(hariIniItems) {
-        const container = document.getElementById('jobCounterContainer');
-        if (!container) return;
-
+    // Hitung job menyamping lurus horizontal
+    function generateCounterHTML(hariIniItems) {
         let counts = {};
         JOB_LIST.forEach(j => counts[j] = 0);
         
@@ -259,12 +282,12 @@
             }
         });
 
-        let html = '<span style="font-size:11px; font-weight:bold; color:#475569; white-space:nowrap;">HARI INI:</span>';
+        let html = '<div class="job-counter-wrapper">';
         JOB_LIST.forEach(j => {
-            html += `<span class="job-counter-badge">${j}: ${counts[j]}</span>`;
+            html += `<span class="job-counter-badge"><b>${j}:</b> ${counts[j]}</span>`;
         });
-        
-        container.innerHTML = html;
+        html += '</div>';
+        return html;
     }
 
     function render() {
@@ -285,26 +308,25 @@
         let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
         let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
 
-        // Perbarui data counter menyamping di panel atas
-        updateJobCounterDOM(hariIni);
-
         if (mode === 'today') {
             if (menginap.length > 0) {
                 menginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
                 let lastDate = "";
                 menginap.forEach((x, i) => {
                     if (x.tanggalMasuk !== lastDate) {
-                        addSeparator(tbody, `📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}`, "sep-menginap");
+                        addSeparator(tbody, `<span>📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}</span>`, "sep-menginap");
                         lastDate = x.tanggalMasuk;
                     }
                     addRow(tbody, x, i + 1);
                 });
             }
-            addSeparator(tbody, "🚗 PENERIMAAN HARI INI", "sep-today");
+            
+            const counterHTML = generateCounterHTML(hariIni);
+            addSeparator(tbody, `<span>🚗 PENERIMAAN HARI INI</span> ${counterHTML}`, "sep-today");
             hariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
         } else {
             let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
-            addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
+            addSeparator(tbody, `<span>🔍 DATA TANGGAL: ${selectedDate}</span>`, "");
             histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
         }
 
@@ -317,9 +339,9 @@
         }
     }
 
-    function addSeparator(tbody, text, customClass) {
+    function addSeparator(tbody, innerHTMLContent, customClass) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="12" class="group-separator ${customClass}">${text}</td>`;
+        tr.innerHTML = `<td colspan="12" class="group-separator ${customClass}">${innerHTMLContent}</td>`;
         tbody.appendChild(tr);
     }
 
@@ -397,16 +419,16 @@
     }
 
     function sendWA(id) {
-    const d = allData[id];
-    if(!d.tel) return alert('No HP kosong');
-    const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
-    const namaBold = d.nama.toUpperCase();
-    
-    // Menggunakan Unicode \u{1F64F} sebagai pengganti aman untuk emoji 🙏
-    const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih \u{1F64F}`;
-    
-    window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
-}
+        const d = allData[id];
+        if(!d.tel) return alert('No HP kosong');
+        const hp = d.tel.replace(/\D/g,'').replace(/^0/, '62');
+        const namaBold = d.nama.toUpperCase();
+        
+        // Unicode \u{1F64F} dibaca sebagai emoji 🙏 asli yang aman untuk Windows/Mac/HP
+        const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih \u{1F64F}_`;
+        
+        window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
 
     function deleteData(id) {
         if(confirm('Hapus data ini?')) {
