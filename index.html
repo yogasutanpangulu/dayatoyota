@@ -40,8 +40,8 @@
         .actions { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
         button { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; }
         .btn-add { background: var(--primary); color: white; }
-        .btn-estimasi { background: #764ba2; color: white; } /* Warna ungu agar beda */
-        .btn-estimasi-2 { background: #d946ef; color: white; } /* Warna pink/magenta khusus Estimasi 2 */
+        .btn-estimasi { background: #764ba2; color: white; }
+        .btn-estimasi-2 { background: #d946ef; color: white; }
         .btn-date { background: white; color: #334155; border: 1px solid #cbd5e1; }
         .btn-download { background: #10b981; color: white; }
         
@@ -54,7 +54,7 @@
         .sep-today { background: #e2e8f0 !important; color: #475569 !important; border-left: 6px solid #64748b !important; font-weight: bold; padding: 10px !important; }
 
         .table-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        table { width: 100%; min-width: 1200px; border-collapse: collapse; }
+        table { width: 100%; min-width: 1300px; border-collapse: collapse; }
         th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 11px; color: #64748b; text-transform: uppercase; }
         td { padding: 6px; border-bottom: 1px solid #f1f5f9; }
         input, select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; background: transparent; }
@@ -68,6 +68,10 @@
         /* Style khusus Jendela Estimasi */
         #iframe-container { width: 100%; height: calc(100vh - 100px); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; }
         iframe { width: 100%; height: 100%; border: none; }
+
+        /* Style Counter Job Menyamping Sejajar Row */
+        .job-counter-box { background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; }
+        .job-counter-badge { background: #f1f5f9; color: #1e293b; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 11px; font-weight: bold; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -82,6 +86,10 @@
         <button class="btn-estimasi" onclick="showPage('estimasi')">📊 BUKA ESTIMASI 2025</button>
         <button class="btn-estimasi-2" onclick="showPage('estimasi-2')">🚀 BUKA ESTIMASI 2</button>
         <button class="btn-add" onclick="addNewRow()">+ TAMBAH DATA</button>
+        
+        <!-- Wadah Counter Job Menyamping Sejajar di Actions Bar -->
+        <div class="job-counter-box" id="jobCounterContainer"></div>
+        
         <div style="flex-grow: 1"></div>
         <div class="download-box">
             <span style="font-size:11px; font-weight:bold">REKAP:</span>
@@ -104,6 +112,7 @@
                         <th>Nama Customer</th>
                         <th style="width:125px">No Telepon</th>
                         <th>Tipe Mobil</th>
+                        <th style="width:110px">Job</th>
                         <th style="width:100px">Janji Jam</th>
                         <th style="width:110px">Selesai</th>
                         <th style="width:115px">Penyerahan</th>
@@ -141,24 +150,6 @@
 </div>
 
 <script>
-    // --- FUNGSI PINDAH HALAMAN (Mendukung 3 Halaman Lengkap) ---
-    function showPage(page) {
-        if(page === 'estimasi') {
-            document.getElementById('page-dashboard').style.display = 'none';
-            document.getElementById('page-estimasi').style.display = 'block';
-            document.getElementById('page-estimasi-2').style.display = 'none';
-        } else if(page === 'estimasi-2') {
-            document.getElementById('page-dashboard').style.display = 'none';
-            document.getElementById('page-estimasi').style.display = 'none';
-            document.getElementById('page-estimasi-2').style.display = 'block';
-        } else {
-            document.getElementById('page-dashboard').style.display = 'block';
-            document.getElementById('page-estimasi').style.display = 'none';
-            document.getElementById('page-estimasi-2').style.display = 'none';
-        }
-    }
-
-    // --- LOGIKA DASHBOARD ASLI ---
     const d = new Date();
     const TODAY_STR = d.toISOString().split('T')[0];
     const TODAY_DISPLAY = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
@@ -167,6 +158,7 @@
     let mode = 'today';
     let selectedDate = null;
     let allData = {};
+    const JOB_LIST = ["SBER", "SBEF", "GRR", "GRF", "TWCR", "TWCF", "SBIR", "SBIF"];
 
     window.onload = () => {
         const dataRef = window.dbRef(window.db, 'services');
@@ -181,11 +173,12 @@
         const id = Date.now().toString();
         window.dbSet(window.dbRef(window.db, 'services/' + id), {
             id: id, tanggalMasuk: TODAY_STR, tanggalDiserahkan: "",
-            nopol: "", nama: "", tel: "", tipe: "",
+            nopol: "", nama: "", tel: "", tipe: "", job: "",
             janji: "", selesai: "", diserahkan: "", konfirmasi: "", status: "TUNGGU"
         });
     }
 
+    // Fungsi update real-time ke database Firebase
     function updateData(id, field, value) {
         const updates = {};
         updates[field] = value;
@@ -197,10 +190,6 @@
             }
         }
         window.dbUpdate(window.dbRef(window.db, 'services/' + id), updates);
-    }
-
-    function deleteData(id) {
-        if(confirm('Hapus data ini?')) window.dbRemove(window.dbRef(window.db, 'services/' + id));
     }
 
     function handlePaste(e, id) {
@@ -248,6 +237,36 @@
         return html;
     }
 
+    function getJobOptions(selected) {
+        let html = '<option value="">- Job -</option>';
+        JOB_LIST.forEach(job => {
+            html += `<option value="${job}" ${selected === job ? 'selected' : ''}>${job}</option>`;
+        });
+        return html;
+    }
+
+    // Menghitung jumlah job hari ini secara presisi
+    function updateJobCounterDOM(hariIniItems) {
+        const container = document.getElementById('jobCounterContainer');
+        if (!container) return;
+
+        let counts = {};
+        JOB_LIST.forEach(j => counts[j] = 0);
+        
+        hariIniItems.forEach(item => {
+            if (item.job && counts[item.job] !== undefined) {
+                counts[item.job]++;
+            }
+        });
+
+        let html = '<span style="font-size:11px; font-weight:bold; color:#475569; white-space:nowrap;">HARI INI:</span>';
+        JOB_LIST.forEach(j => {
+            html += `<span class="job-counter-badge">${j}: ${counts[j]}</span>`;
+        });
+        
+        container.innerHTML = html;
+    }
+
     function render() {
         const tbody = document.getElementById('mainTable');
         if(!tbody) return;
@@ -265,6 +284,9 @@
 
         let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
         let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
+
+        // Perbarui data counter menyamping di panel atas
+        updateJobCounterDOM(hariIni);
 
         if (mode === 'today') {
             if (menginap.length > 0) {
@@ -297,7 +319,7 @@
 
     function addSeparator(tbody, text, customClass) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="11" class="group-separator ${customClass}">${text}</td>`;
+        tr.innerHTML = `<td colspan="12" class="group-separator ${customClass}">${text}</td>`;
         tbody.appendChild(tr);
     }
 
@@ -325,6 +347,7 @@
             <td><input id="input-nama-${x.id}" class="input-nama" value="${x.nama}" placeholder="Nama" oninput="updateData('${x.id}','nama',this.value)"></td>
             <td><input id="input-tel-${x.id}" value="${x.tel}" placeholder="08..." oninput="updateData('${x.id}','tel',this.value)"></td>
             <td><input id="input-tipe-${x.id}" value="${x.tipe}" placeholder="Tipe" oninput="updateData('${x.id}','tipe',this.value)"></td>
+            <td><select onchange="updateData('${x.id}','job',this.value)">${getJobOptions(x.job)}</select></td>
             <td><select onchange="updateData('${x.id}','janji',this.value)">${getTimeOptions(x.janji)}</select></td>
             <td><select onchange="updateData('${x.id}','selesai',this.value)">
                 <option value="" ${x.selesai===''?'selected':''}>-</option>
@@ -358,11 +381,11 @@
         const start = document.getElementById('startDl').value;
         const end = document.getElementById('endDl').value;
         if(!start || !end) return alert('Pilih rentang tanggal download');
-        let csv = "Tanggal Masuk;No Polisi;Nama Customer;No Telepon;Tipe Mobil;Jam Janji;Status Selesai;Penyerahan;Konfirmasi;Status\n";
+        let csv = "Tanggal Masuk;No Polisi;Nama Customer;No Telepon;Tipe Mobil;Job;Jam Janji;Status Selesai;Penyerahan;Konfirmasi;Status\n";
         Object.values(allData).forEach(x => {
             if(x.tanggalMasuk >= start && x.tanggalMasuk <= end) {
                 const clean = (val) => val ? val.toString().replace(/;/g, ',') : '-';
-                csv += `${clean(x.tanggalMasuk)};${clean(x.nopol)};${clean(x.nama)};${clean(x.tel)};${clean(x.tipe)};${clean(x.janji)};${clean(x.selesai)};${clean(x.diserahkan)};${clean(x.konfirmasi)};${clean(x.status)}\n`;
+                csv += `${clean(x.tanggalMasuk)};${clean(x.nopol)};${clean(x.nama)};${clean(x.tel)};${clean(x.tipe)};${clean(x.job)};${clean(x.janji)};${clean(x.selesai)};${clean(x.diserahkan)};${clean(x.konfirmasi)};${clean(x.status)}\n`;
             }
         });
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -380,6 +403,12 @@
         const namaBold = d.nama.toUpperCase();
         const msg = `Selamat siang Bapak/Ibu *${namaBold}*,\n\nSaya Yoga SA Toyota Cakung. Kendaraan *${d.nopol}* (${d.tipe}) sudah selesai dan bisa diambil di Counter 2.\n\nNote: Mohon membawa tanda terima kendaraan. Maksimal jam 15:30.\n\nTerimakasih 🙏_`;
         window.open(`https://wa.me/${hp}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    function deleteData(id) {
+        if(confirm('Hapus data ini?')) {
+            window.dbRemove(window.dbRef(window.db, 'services/' + id));
+        }
     }
 
     function setMode(m) {
