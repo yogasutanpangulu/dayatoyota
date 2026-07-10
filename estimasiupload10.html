@@ -1338,10 +1338,12 @@
     }
 
     function injectDataToFormElements(est) {
-        document.getElementById('nopol').value = est.nopol;
+    document.getElementById('nopol').value = est.nopol;
 
-        const jasaBody = document.querySelector('#table-jasa tbody');
-        jasaBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+    // 1. Bersihkan dan Isi Tabel Jasa
+    const jasaBody = document.querySelector('#table-jasa tbody');
+    jasaBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+    if (est.jasa) {
         est.jasa.forEach(j => {
             addRow('table-jasa');
             const row = jasaBody.querySelector('tr:nth-last-child(3)');
@@ -1351,9 +1353,12 @@
             if(j.disc) row.querySelector('.disc-input').value = j.disc;
             if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
         });
+    }
 
-        const partBody = document.querySelector('#table-part tbody');
-        partBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+    // 2. Bersihkan dan Isi Tabel Part
+    const partBody = document.querySelector('#table-part tbody');
+    partBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+    if (est.part) {
         est.part.forEach(p => {
             addRow('table-part');
             const row = partBody.querySelector('tr:nth-last-child(3)');
@@ -1363,41 +1368,116 @@
             if(p.disc) row.querySelector('.disc-input').value = p.disc;
             if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
         });
-
-        initDefaultLainTable();
-        const lainRows = document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)');
-        if(est.lain) {
-            est.lain.forEach((l, idx) => {
-                if(lainRows[idx]) {
-                    lainRows[idx].querySelector('.qty-input').value = l.qty;
-                    lainRows[idx].querySelector('.price-input').value = l.price;
-                    lainRows[idx].querySelector('.item-select').value = l.name;
-                    if(l.disc) lainRows[idx].querySelector('.disc-input').value = l.disc;
-                    if(l.discType) lainRows[idx].querySelector('.disc-type-select').value = l.discType;
-                }
-            });
-        }
-        calculateAll();
     }
 
-    function loadStorageList() {
-        const list = document.getElementById('storage-list');
-        list.innerHTML = '';
-        const savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
+    // 3. PERBAIKAN: Bersihkan dan Isi Tabel OPL sesuai data yang disimpan
+    const tableLain = document.getElementById('table-lain');
+    let lainBody = tableLain.getElementsByTagName('tbody')[0];
+    lainBody.innerHTML = ''; // Kosongkan total, jangan panggil initDefaultLainTable()
 
-        savedEstimations.forEach(est => {
-            const li = document.createElement('li');
-            li.className = 'storage-item';
-            li.innerHTML = `
-                <span><strong>${est.nopol}</strong> (${est.date})</span>
-                <div style="display:flex; gap:6px;">
-                    <button class="btn btn-load" onclick="loadLocalEstimation('${est.nopol}')">Buka</button>
-                    <button class="btn btn-delete" onclick="deleteEstimation('${est.nopol}')">Hapus</button>
-                </div>
+    if (est.lain && est.lain.length > 0) {
+        est.lain.forEach(l => {
+            // Logika addRow untuk Lain secara manual agar sesuai data tersimpan
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-center"><input type="number" class="qty-input" value="${l.qty}" oninput="calculateAll()"></td>
+                <td>
+                    <div class="currency-box">
+                        <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
+                        <div class="price-wrapper">
+                            <span>Rp</span>
+                            <input type="number" class="price-input" value="${l.price}" oninput="calculateAll()">
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="input-with-copy">
+                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                        <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
+                    </div>
+                </td>
+                <td>
+                    <div class="currency-box">
+                        <input type="number" class="disc-input" value="${l.disc || 0}" oninput="calculateAll()">
+                        <select class="disc-type-select" onchange="calculateAll()">
+                            <option value="%" ${l.discType === '%' ? 'selected' : ''}>%</option>
+                            <option value="Rp" ${l.discType === 'Rp' ? 'selected' : ''}>Rp</option>
+                        </select>
+                    </div>
+                </td>
+                <td><div class="currency-box"><span>Rp</span><span class="row-total-val">0</span></div></td>
+                <td class="text-center"><button class="btn-remove" onclick="removeRow(this)">X</button></td>
             `;
-            list.appendChild(li);
+            lainBody.appendChild(tr);
+            
+            // Isi dropdown OPL
+            const selectEl = tr.querySelector('.item-select');
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
+            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
+            masterDatabase.filter(d => d.type === 'opl').forEach(d => {
+                optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
+            });
+            selectEl.innerHTML = optionsHtml;
+            selectEl.value = l.name;
         });
     }
+
+    // Buat ulang baris total & discount untuk OPL
+    const totalTr = document.createElement('tr');
+    totalTr.className = 'row-total';
+    totalTr.innerHTML = `<td colspan="4" class="row-total-label">JUMLAH</td><td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td><td></td>`;
+    lainBody.appendChild(totalTr);
+
+    const discTr = document.createElement('tr');
+    discTr.className = 'row-discount';
+    discTr.innerHTML = `<td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td><td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td><td></td>`;
+    lainBody.appendChild(discTr);
+
+    calculateAll();
+}
+
+    // Mengubah daftar penyimpanan agar otomatis membaca dari Firebase saat halaman dimuat
+function loadStorageList() {
+    const list = document.getElementById('storage-list');
+    list.innerHTML = '<li style="padding:10px; color:#666;">Memuat riwayat dari Cloud...</li>';
+    
+    if (window.db && window.dbRef && window.dbOnValue) {
+        const recordsRef = window.dbRef(window.db, 'estimasi_records_v2');
+        window.dbOnValue(recordsRef, (snapshot) => {
+            list.innerHTML = '';
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    const est = data[key];
+                    const li = document.createElement('li');
+                    li.className = 'storage-item';
+                    li.innerHTML = `
+                        <span><strong>${est.nopol}</strong> (${est.date || 'Cloud Data'})</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-load" onclick="loadCloudEstimationDirect('${key}')">Buka</button>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = '<li style="padding:10px; color:#999;">Belum ada estimasi di Cloud.</li>';
+            }
+        }, { onlyOnce: true });
+    }
+}
+
+function loadCloudEstimationDirect(cleanKey) {
+    if (window.db && window.dbRef && window.dbOnValue) {
+        const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
+        window.dbOnValue(cloudRef, (snapshot) => {
+            const est = snapshot.val();
+            if (est) {
+                injectDataToFormElements(est);
+                showToast(`📂 Berhasil memuat data ${est.nopol} dari Cloud!`);
+            }
+        }, { onlyOnce: true });
+    }
+}
 
     function loadLocalEstimation(nopol) {
         const savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
