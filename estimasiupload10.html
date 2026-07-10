@@ -591,9 +591,14 @@
                     </td>
                 </tr>
                 <tr>
-                    <td class="grand-total-label">TOTAL SETELAH DISKON</td>
-                    <td class="grand-total-value double-underline"><div class="currency-box"><span>Rp</span><span id="final-total">0</span></div></td>
-                </tr>
+    <td class="grand-total-label">TOTAL SETELAH DISKON</td>
+    <td class="grand-total-value double-underline">
+        <div class="currency-box">
+            <button class="btn-copy" onclick="copyFinalTotal()" title="Salin Total Setelah Diskon">📋</button>
+            <span>Rp</span><span id="final-total">0</span>
+        </div>
+    </td>
+</tr>
             </tbody>
         </table>
     </div>
@@ -816,6 +821,21 @@
             showToast("⚠️ Baris isian kosong!");
         }
     }
+
+    function copyFinalTotal() {
+    const finalTotalValue = document.getElementById('final-total').innerText;
+    
+    // Cegah menyalin jika nilainya masih 0
+    if (finalTotalValue !== "0") {
+        navigator.clipboard.writeText(finalTotalValue).then(() => {
+            showToast(`📋 Total Akhir Tersalin: "Rp ${finalTotalValue}"`);
+        }).catch(err => {
+            console.error('Gagal menyalin teks: ', err);
+        });
+    } else {
+        showToast("⚠️ Nilai total masih kosong!");
+    }
+}
 
     function addRow(tableId) {
         const table = document.getElementById(tableId);
