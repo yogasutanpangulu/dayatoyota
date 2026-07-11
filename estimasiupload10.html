@@ -759,7 +759,7 @@
         document.getElementById('top-anchor').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function calculateAll() {
+        function calculateAll() {
         let subtotalJasa = 0;
         let discTotalJasa = 0;
         
@@ -849,6 +849,15 @@
         document.getElementById('final-total').innerText = finalTotal.toLocaleString('id-ID');
 
         compilePartCodes();
+
+        // --- TAMBAHAN AUTO-SAVE 1.5 DETIK ---
+        clearTimeout(window.autoSaveTimer);
+        window.autoSaveTimer = setTimeout(() => {
+            if (document.getElementById('nopol').value.trim() !== "") {
+                saveEstimation(true); // Simpan otomatis tanpa memunculkan pesan sukses di layar
+            }
+        }, 1500);
+        // --- BATAS TAMBAHAN ---
     }
 
     function copyValue(button) {
@@ -1319,9 +1328,12 @@
         });
     }
 
-    function saveEstimation() {
+        function saveEstimation(isSilent = false) {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
-        if (!nopol) { alert('Harap isi NOMOR POLISI sebelum menyimpan!'); return; }
+        if (!nopol) { 
+            if (!isSilent) alert('Harap isi NOMOR POLISI sebelum menyimpan!'); 
+            return; 
+        }
 
         const estimationData = {
             nopol: nopol,
@@ -1331,28 +1343,22 @@
 
         document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             estimationData.jasa.push({
-                qty: row.querySelector('.qty-input').value,
-                price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-name').value,
-                disc: row.querySelector('.disc-input').value,
+                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value,
                 discType: row.querySelector('.disc-type-select').value
             });
         });
         document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             estimationData.lain.push({
-                qty: row.querySelector('.qty-input').value,
-                price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-select').value,
-                disc: row.querySelector('.disc-input').value,
+                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-select').value, disc: row.querySelector('.disc-input').value,
                 discType: row.querySelector('.disc-type-select').value
             });
         });
         document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             estimationData.part.push({
-                qty: row.querySelector('.qty-input').value,
-                price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-name').value,
-                disc: row.querySelector('.disc-input').value,
+                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value,
                 discType: row.querySelector('.disc-type-select').value
             });
         });
@@ -1367,19 +1373,17 @@
             const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
             window.dbSet(cloudRef, estimationData)
                 .then(() => {
-                    showToast(`✅ Estimasi Mobil ${nopol} Sukses Tersimpan ke Lokal & Cloud!`);
-                })
-                .catch((error) => {
-                    console.error("Firebase Gagal: ", error);
-                    showToast(`⚠️ Tersimpan di Lokal. Cloud Gagal Terhubung.`);
+                    if (!isSilent) showToast(`✅ Estimasi Mobil ${nopol} Sukses Tersimpan!`);
+                }).catch((error) => {
+                    if (!isSilent) showToast(`⚠️ Tersimpan di Lokal. Cloud Gagal Terhubung.`);
                 });
         } else {
-            showToast(`✅ Estimasi Mobil ${nopol} Tersimpan di Lokal.`);
+            if (!isSilent) showToast(`✅ Estimasi Mobil ${nopol} Tersimpan di Lokal.`);
         }
-        loadStorageList();
+        if (!isSilent) loadStorageList();
     }
 
-    function fetchFromCloudDatabase() {
+        function fetchFromCloudDatabase() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
         if (!nopol) { alert('Masukkan Nomor Polisi terlebih dahulu untuk melacak data cloud!'); return; }
 
@@ -1387,17 +1391,23 @@
             const cleanKey = nopol.replace(/[\.\#\$\[\]]/g, "-");
             const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
             
-            window.dbOnValue(cloudRef, (snapshot) => {
+            // Hentikan koneksi Nopol sebelumnya agar tidak menumpuk
+            if (window.liveUnsubscribe) window.liveUnsubscribe();
+
+            showToast(`📡 Memulai Live Sync (Online) untuk ${nopol}...`);
+            
+            // Pantau Firebase secara terus-menerus
+            window.liveUnsubscribe = window.dbOnValue(cloudRef, (snapshot) => {
                 const est = snapshot.val();
                 if (est) {
+                    // Cekatan cerdas: Jangan merefresh layar jika pengguna komputer SEDANG KLIK KOLOM.
+                    // Ini menghindari kursor hilang saat dua orang ngetik barengan.
+                    const isTyping = document.activeElement.tagName;
+                    if (isTyping === "INPUT" || isTyping === "SELECT") return; 
+
                     injectDataToFormElements(est);
-                    showToast(`📦 Sukses Mengunduh Berkas ${nopol} dari Firebase Cloud Database!`);
-                } else {
-                    alert(`❌ Berkas Online untuk Nopol ${nopol} tidak ditemukan pada Estimasi 2.`);
                 }
-            }, { onlyOnce: true });
-        } else {
-            alert('Koneksi Modul Firebase Realtime Database bermasalah.');
+            });
         }
     }
 
