@@ -1507,8 +1507,10 @@
                     Object.keys(data).forEach(key => {
                         const est = data[key];
                         const li = document.createElement('li');
-                        li.className = 'storage-item';
-                        li.innerHTML = `
+li.className = 'storage-item';
+li.style.display = 'none'; // <-- TAMBAHKAN BARIS INI
+li.innerHTML = `
+
                             <span><strong>${est.nopol}</strong> (${est.date || 'Cloud Data'})</span>
                             <div style="display:flex; gap:6px;">
                                 <button class="btn btn-load" onclick="loadCloudEstimationDirect('${key}')">Buka</button>
@@ -1555,12 +1557,21 @@
     }
 
     function filterStorage() {
-        const filter = document.getElementById('search-input').value.toUpperCase();
-        document.querySelectorAll('#storage-list .storage-item').forEach(item => {
-            const txt = item.querySelector('span').innerText;
-            item.style.display = txt.toUpperCase().includes(filter) ? "" : "none";
-        });
+    const filter = document.getElementById('search-input').value.trim().toUpperCase();
+    const items = document.querySelectorAll('#storage-list .storage-item');
+    
+    // Jika kolom pencarian kosong, sembunyikan semua daftar
+    if (filter === "") {
+        items.forEach(item => item.style.display = "none");
+        return;
     }
+
+    // Jika ada pencarian, filter dan tampilkan yang cocok saja
+    items.forEach(item => {
+        const txt = item.querySelector('span').innerText;
+        item.style.display = txt.toUpperCase().includes(filter) ? "" : "none";
+    });
+}
 
     function resetFormToNew() {
         if (confirm('Kosongkan form dan buat estimasi baru?')) {
