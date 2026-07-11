@@ -402,6 +402,7 @@
         }
 
         @media print {
+            .hide-on-print { display: none !important; }
             body { background: #fff; padding: 0; }
             .container { box-shadow: none; max-width: 100%; padding: 0; }
             .action-panel, .storage-panel, .master-panel, .btn, .btn-remove, .btn-copy, .scroll-top-btn { display: none !important; }
@@ -684,6 +685,31 @@
     
     let masterDatabase = [];
 
+    function saveMasterDBToCloud(data) {
+        if (window.db && window.dbRef && window.dbSet) {
+            const dbRef = window.dbRef(window.db, 'master_database_v2');
+            window.dbSet(dbRef, data).catch(e => console.log('Gagal sync DB ke cloud', e));
+        }
+    }
+
+    function syncMasterDatabaseCloud() {
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const dbRef = window.dbRef(window.db, 'master_database_v2');
+            window.dbOnValue(dbRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    localStorage.setItem('bengkel_master_db', JSON.stringify(data));
+                    masterDatabase = [...lockedLainItems, ...data];
+                } else {
+                    let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
+                    masterDatabase = [...lockedLainItems, ...savedData];
+                }
+                renderMasterTable();
+                updateAllDropdowns();
+            });
+        }
+    }
+
     function syncMasterDatabase() {
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         masterDatabase = [...lockedLainItems, ...savedData];
@@ -823,19 +849,17 @@
     }
 
     function copyFinalTotal() {
-    const finalTotalValue = document.getElementById('final-total').innerText;
-    
-    // Cegah menyalin jika nilainya masih 0
-    if (finalTotalValue !== "0") {
-        navigator.clipboard.writeText(finalTotalValue).then(() => {
-            showToast(`📋 Total Akhir Tersalin: "Rp ${finalTotalValue}"`);
-        }).catch(err => {
-            console.error('Gagal menyalin teks: ', err);
-        });
-    } else {
-        showToast("⚠️ Nilai total masih kosong!");
+        const finalTotalValue = document.getElementById('final-total').innerText;
+        if (finalTotalValue !== "0") {
+            navigator.clipboard.writeText(finalTotalValue).then(() => {
+                showToast(`📋 Total Akhir Tersalin: "Rp ${finalTotalValue}"`);
+            }).catch(err => {
+                console.error('Gagal menyalin teks: ', err);
+            });
+        } else {
+            showToast("⚠️ Nilai total masih kosong!");
+        }
     }
-}
 
     function addRow(tableId) {
         const table = document.getElementById(tableId);
@@ -1053,7 +1077,7 @@
         `;
         tbody.appendChild(totalTr);
 
-                const discTr = document.createElement('tr');
+        const discTr = document.createElement('tr');
         discTr.className = 'row-discount';
         discTr.innerHTML = `
             <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td>
@@ -1078,6 +1102,7 @@
         savedData.push({ id: Date.now(), type: type, name: name, price: price, code: code });
         
         localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
+        saveMasterDBToCloud(savedData);
         
         document.getElementById('db-name').value = '';
         document.getElementById('db-code').value = '';
@@ -1098,6 +1123,7 @@
             let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
             savedData = savedData.filter(item => String(item.id) !== String(id));
             localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
+            saveMasterDBToCloud(savedData);
             
             syncMasterDatabase();
             renderMasterTable();
@@ -1171,6 +1197,7 @@
     function clearAllDatabase() {
         if (confirm('Apakah Anda yakin ingin MENGHAPUS SEMUA DATA kustom tambahan Anda?')) {
             localStorage.removeItem('bengkel_master_db');
+            saveMasterDBToCloud([]);
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
@@ -1192,13 +1219,14 @@
 
             let separator = lines[0].includes(';') ? ';' : ',';
             const headers = lines[0].toLowerCase().split(separator);
-            const catIdx = headers.findIndex(h => h.trim().includes('category'));
-            const nameIdx = headers.findIndex(h => h.trim().includes('name'));
-            const priceIdx = headers.findIndex(h => h.trim().includes('price'));
-            const codeIdx = headers.findIndex(h => h.trim().includes('code'));
+            
+            const catIdx = headers.findIndex(h => h.trim().includes('category') || h.trim().includes('kategori'));
+            const nameIdx = headers.findIndex(h => h.trim().includes('name') || h.trim().includes('nama') || h.trim().includes('deskripsi'));
+            const priceIdx = headers.findIndex(h => h.trim().includes('price') || h.trim().includes('harga'));
+            const codeIdx = headers.findIndex(h => h.trim().includes('code') || h.trim().includes('kode'));
 
             if (catIdx === -1 || nameIdx === -1 || priceIdx === -1) {
-                alert('Format template salah! Gunakan kolom: category, name, price, code');
+                alert('Format template salah! Gunakan kolom: Kategori, Nama, Harga, Kode');
                 return;
             }
 
@@ -1226,6 +1254,7 @@
             }
 
             localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
+            saveMasterDBToCloud(savedData);
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
@@ -1358,146 +1387,139 @@
     }
 
     function injectDataToFormElements(est) {
-    document.getElementById('nopol').value = est.nopol;
+        document.getElementById('nopol').value = est.nopol;
 
-    // 1. Bersihkan dan Isi Tabel Jasa
-    const jasaBody = document.querySelector('#table-jasa tbody');
-    jasaBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
-    if (est.jasa) {
-        est.jasa.forEach(j => {
-            addRow('table-jasa');
-            const row = jasaBody.querySelector('tr:nth-last-child(3)');
-            row.querySelector('.qty-input').value = j.qty;
-            row.querySelector('.price-input').value = j.price;
-            row.querySelector('.item-name').value = j.name;
-            if(j.disc) row.querySelector('.disc-input').value = j.disc;
-            if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
-        });
-    }
-
-    // 2. Bersihkan dan Isi Tabel Part
-    const partBody = document.querySelector('#table-part tbody');
-    partBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
-    if (est.part) {
-        est.part.forEach(p => {
-            addRow('table-part');
-            const row = partBody.querySelector('tr:nth-last-child(3)');
-            row.querySelector('.qty-input').value = p.qty;
-            row.querySelector('.price-input').value = p.price;
-            row.querySelector('.item-name').value = p.name;
-            if(p.disc) row.querySelector('.disc-input').value = p.disc;
-            if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
-        });
-    }
-
-    // 3. PERBAIKAN: Bersihkan dan Isi Tabel OPL sesuai data yang disimpan
-    const tableLain = document.getElementById('table-lain');
-    let lainBody = tableLain.getElementsByTagName('tbody')[0];
-    lainBody.innerHTML = ''; // Kosongkan total, jangan panggil initDefaultLainTable()
-
-    if (est.lain && est.lain.length > 0) {
-        est.lain.forEach(l => {
-            // Logika addRow untuk Lain secara manual agar sesuai data tersimpan
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="text-center"><input type="number" class="qty-input" value="${l.qty}" oninput="calculateAll()"></td>
-                <td>
-                    <div class="currency-box">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
-                        <div class="price-wrapper">
-                            <span>Rp</span>
-                            <input type="number" class="price-input" value="${l.price}" oninput="calculateAll()">
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="input-with-copy">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
-                    </div>
-                </td>
-                <td>
-                    <div class="currency-box">
-                        <input type="number" class="disc-input" value="${l.disc || 0}" oninput="calculateAll()">
-                        <select class="disc-type-select" onchange="calculateAll()">
-                            <option value="%" ${l.discType === '%' ? 'selected' : ''}>%</option>
-                            <option value="Rp" ${l.discType === 'Rp' ? 'selected' : ''}>Rp</option>
-                        </select>
-                    </div>
-                </td>
-                <td><div class="currency-box"><span>Rp</span><span class="row-total-val">0</span></div></td>
-                <td class="text-center"><button class="btn-remove" onclick="removeRow(this)">X</button></td>
-            `;
-            lainBody.appendChild(tr);
-            
-            // Isi dropdown OPL
-            const selectEl = tr.querySelector('.item-select');
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
-            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
-            masterDatabase.filter(d => d.type === 'opl').forEach(d => {
-                optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
+        const jasaBody = document.querySelector('#table-jasa tbody');
+        jasaBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+        if (est.jasa) {
+            est.jasa.forEach(j => {
+                addRow('table-jasa');
+                const row = jasaBody.querySelector('tr:nth-last-child(3)');
+                row.querySelector('.qty-input').value = j.qty;
+                row.querySelector('.price-input').value = j.price;
+                row.querySelector('.item-name').value = j.name;
+                if(j.disc) row.querySelector('.disc-input').value = j.disc;
+                if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
             });
-            selectEl.innerHTML = optionsHtml;
-            selectEl.value = l.name;
-        });
-    }
+        }
 
-    // Buat ulang baris total & discount untuk OPL
-    const totalTr = document.createElement('tr');
-    totalTr.className = 'row-total';
-    totalTr.innerHTML = `<td colspan="4" class="row-total-label">JUMLAH</td><td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td><td></td>`;
-    lainBody.appendChild(totalTr);
+        const partBody = document.querySelector('#table-part tbody');
+        partBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+        if (est.part) {
+            est.part.forEach(p => {
+                addRow('table-part');
+                const row = partBody.querySelector('tr:nth-last-child(3)');
+                row.querySelector('.qty-input').value = p.qty;
+                row.querySelector('.price-input').value = p.price;
+                row.querySelector('.item-name').value = p.name;
+                if(p.disc) row.querySelector('.disc-input').value = p.disc;
+                if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
+            });
+        }
 
-    const discTr = document.createElement('tr');
-    discTr.className = 'row-discount';
-    discTr.innerHTML = `<td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td><td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td><td></td>`;
-    lainBody.appendChild(discTr);
+        const tableLain = document.getElementById('table-lain');
+        let lainBody = tableLain.getElementsByTagName('tbody')[0];
+        lainBody.innerHTML = ''; 
 
-    calculateAll();
-}
-
-    // Mengubah daftar penyimpanan agar otomatis membaca dari Firebase saat halaman dimuat
-function loadStorageList() {
-    const list = document.getElementById('storage-list');
-    list.innerHTML = '<li style="padding:10px; color:#666;">Memuat riwayat dari Cloud...</li>';
-    
-    if (window.db && window.dbRef && window.dbOnValue) {
-        const recordsRef = window.dbRef(window.db, 'estimasi_records_v2');
-        window.dbOnValue(recordsRef, (snapshot) => {
-            list.innerHTML = '';
-            const data = snapshot.val();
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const est = data[key];
-                    const li = document.createElement('li');
-                    li.className = 'storage-item';
-                    li.innerHTML = `
-                        <span><strong>${est.nopol}</strong> (${est.date || 'Cloud Data'})</span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-load" onclick="loadCloudEstimationDirect('${key}')">Buka</button>
+        if (est.lain && est.lain.length > 0) {
+            est.lain.forEach(l => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center"><input type="number" class="qty-input" value="${l.qty}" oninput="calculateAll()"></td>
+                    <td>
+                        <div class="currency-box">
+                            <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
+                            <div class="price-wrapper">
+                                <span>Rp</span>
+                                <input type="number" class="price-input" value="${l.price}" oninput="calculateAll()">
+                            </div>
                         </div>
-                    `;
-                    list.appendChild(li);
+                    </td>
+                    <td>
+                        <div class="input-with-copy">
+                            <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                            <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="currency-box">
+                            <input type="number" class="disc-input" value="${l.disc || 0}" oninput="calculateAll()">
+                            <select class="disc-type-select" onchange="calculateAll()">
+                                <option value="%" ${l.discType === '%' ? 'selected' : ''}>%</option>
+                                <option value="Rp" ${l.discType === 'Rp' ? 'selected' : ''}>Rp</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td><div class="currency-box"><span>Rp</span><span class="row-total-val">0</span></div></td>
+                    <td class="text-center"><button class="btn-remove" onclick="removeRow(this)">X</button></td>
+                `;
+                lainBody.appendChild(tr);
+                
+                const selectEl = tr.querySelector('.item-select');
+                let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
+                optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
+                masterDatabase.filter(d => d.type === 'opl').forEach(d => {
+                    optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
                 });
-            } else {
-                list.innerHTML = '<li style="padding:10px; color:#999;">Belum ada estimasi di Cloud.</li>';
-            }
-        }, { onlyOnce: true });
-    }
-}
+                selectEl.innerHTML = optionsHtml;
+                selectEl.value = l.name;
+            });
+        }
 
-function loadCloudEstimationDirect(cleanKey) {
-    if (window.db && window.dbRef && window.dbOnValue) {
-        const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
-        window.dbOnValue(cloudRef, (snapshot) => {
-            const est = snapshot.val();
-            if (est) {
-                injectDataToFormElements(est);
-                showToast(`📂 Berhasil memuat data ${est.nopol} dari Cloud!`);
-            }
-        }, { onlyOnce: true });
+        const totalTr = document.createElement('tr');
+        totalTr.className = 'row-total';
+        totalTr.innerHTML = `<td colspan="4" class="row-total-label">JUMLAH</td><td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td><td></td>`;
+        lainBody.appendChild(totalTr);
+
+        const discTr = document.createElement('tr');
+        discTr.className = 'row-discount';
+        discTr.innerHTML = `<td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td><td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td><td></td>`;
+        lainBody.appendChild(discTr);
+
+        calculateAll();
     }
-}
+
+    function loadStorageList() {
+        const list = document.getElementById('storage-list');
+        list.innerHTML = '<li style="padding:10px; color:#666;">Memuat riwayat dari Cloud...</li>';
+        
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const recordsRef = window.dbRef(window.db, 'estimasi_records_v2');
+            window.dbOnValue(recordsRef, (snapshot) => {
+                list.innerHTML = '';
+                const data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        const est = data[key];
+                        const li = document.createElement('li');
+                        li.className = 'storage-item';
+                        li.innerHTML = `
+                            <span><strong>${est.nopol}</strong> (${est.date || 'Cloud Data'})</span>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-load" onclick="loadCloudEstimationDirect('${key}')">Buka</button>
+                            </div>
+                        `;
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.innerHTML = '<li style="padding:10px; color:#999;">Belum ada estimasi di Cloud.</li>';
+                }
+            }, { onlyOnce: true });
+        }
+    }
+
+    function loadCloudEstimationDirect(cleanKey) {
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
+            window.dbOnValue(cloudRef, (snapshot) => {
+                const est = snapshot.val();
+                if (est) {
+                    injectDataToFormElements(est);
+                    showToast(`📂 Berhasil memuat data ${est.nopol} dari Cloud!`);
+                }
+            }, { onlyOnce: true });
+        }
+    }
 
     function loadLocalEstimation(nopol) {
         const savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
@@ -1537,12 +1559,53 @@ function loadCloudEstimationDirect(cleanKey) {
         }
     }
 
+    function isTableEmpty(tableId, subtotalId) {
+        const subElem = document.getElementById(subtotalId);
+        if (!subElem) return true;
+        const subtotal = parseFloat(subElem.innerText.replace(/\./g, '').replace(/,/g, '')) || 0;
+        if (subtotal > 0) return false; 
+        
+        let hasName = false;
+        document.querySelectorAll(`#${tableId} tbody tr:not(.row-total):not(.row-discount)`).forEach(row => {
+            let val = '';
+            const input = row.querySelector('.item-name');
+            const select = row.querySelector('.item-select');
+            if (input) val = input.value;
+            if (select) val = select.value;
+            if (val && val.trim() !== '' && val !== 'CUSTOM') {
+                hasName = true;
+            }
+        });
+        return !hasName; 
+    }
+
     function downloadPDF() {
+        const sections = [
+            { tId: 'table-jasa', subId: 'subtotal-jasa' },
+            { tId: 'table-lain', subId: 'subtotal-lain' },
+            { tId: 'table-part', subId: 'subtotal-part' }
+        ];
+
+        sections.forEach(sec => {
+            const table = document.getElementById(sec.tId);
+            if (table) {
+                const title = table.previousElementSibling;
+                if (isTableEmpty(sec.tId, sec.subId)) {
+                    table.classList.add('hide-on-print');
+                    if (title) title.classList.add('hide-on-print');
+                } else {
+                    table.classList.remove('hide-on-print');
+                    if (title) title.classList.remove('hide-on-print');
+                }
+            }
+        });
+
         window.print();
     }
 
     window.onload = function() {
         loadStorageList();
+        syncMasterDatabaseCloud(); 
         renderMasterTable();
         updateAllDropdowns();
         initDefaultLainTable(); 
