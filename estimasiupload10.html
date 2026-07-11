@@ -687,8 +687,17 @@
 
     function saveMasterDBToCloud(data) {
         if (window.db && window.dbRef && window.dbSet) {
+            // Ubah array menjadi object agar lebih stabil di Firebase
+            const dataToSave = {};
+            data.forEach((item, index) => { dataToSave[item.id || index] = item; });
+            
             const dbRef = window.dbRef(window.db, 'master_database_v2');
-            window.dbSet(dbRef, data).catch(e => console.log('Gagal sync DB ke cloud', e));
+            window.dbSet(dbRef, dataToSave)
+                .then(() => console.log("Cloud DB Updated"))
+                .catch(e => {
+                    console.error('Gagal sync DB ke cloud', e);
+                    showToast("⚠️ Gagal sinkronisasi Database ke Cloud.");
+                });
         }
     }
 
@@ -697,13 +706,19 @@
             const dbRef = window.dbRef(window.db, 'master_database_v2');
             window.dbOnValue(dbRef, (snapshot) => {
                 const data = snapshot.val();
+                let validData = [];
                 if (data) {
-                    localStorage.setItem('bengkel_master_db', JSON.stringify(data));
-                    masterDatabase = [...lockedLainItems, ...data];
+                    // Ekstrak data dari format Array atau Object Firebase
+                    const rawArray = Array.isArray(data) ? data : Object.values(data);
+                    // Saring agar hanya item valid yang dimasukkan
+                    validData = rawArray.filter(item => item !== null && typeof item === 'object' && item.name);
+                    
+                    localStorage.setItem('bengkel_master_db', JSON.stringify(validData));
                 } else {
-                    let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
-                    masterDatabase = [...lockedLainItems, ...savedData];
+                    validData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
                 }
+                
+                masterDatabase = [...lockedLainItems, ...validData];
                 renderMasterTable();
                 updateAllDropdowns();
             });
