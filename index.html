@@ -98,11 +98,11 @@
             <button class="btn-download" onclick="downloadData()">DOWNLOAD EXCEL</button>
         </div>
         
-        <!-- TAMBAHAN: Input Pencarian Teks -->
+        <!-- Input Pencarian Teks -->
         <input type="text" id="searchInput" placeholder="Cari Nopol, Nama, Tipe..." style="width:180px; background:white; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-size:13px;" oninput="render()">
 
         <input type="date" id="filterDate" style="width:130px; background:white">
-        <button class="btn-date" onclick="setMode('date')">CARI</button>
+        <button class="btn-date" onclick="setMode('date')">CARI TGL</button>
         <button class="btn-date" onclick="setMode('today')">HARI INI</button>
     </div>
 
@@ -299,59 +299,60 @@
         tbody.innerHTML = '';
         let items = Object.values(allData);
 
-        // KEMBALIKAN LOGIKA FILTER ASLI
-        let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
-        let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
+        // Update Job Counter KHUSUS data hari ini saja agar tidak kacau
+        let hariIniCounter = items.filter(x => x.tanggalMasuk === TODAY_STR);
+        updateTopBarCounter(hariIniCounter);
 
-        updateTopBarCounter(hariIni);
-
-        // --- TAMBAHAN: Logika Filter Pencarian Teks ---
+        // Cek kata kunci pencarian
         const searchInput = document.getElementById('searchInput');
-        const keyword = searchInput ? searchInput.value.toLowerCase() : '';
+        const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-        const isMatch = (x) => {
-            if (!keyword) return true;
-            return (x.nopol && x.nopol.toLowerCase().includes(keyword)) ||
-                   (x.nama && x.nama.toLowerCase().includes(keyword)) ||
-                   (x.tel && x.tel.toLowerCase().includes(keyword)) ||
-                   (x.tipe && x.tipe.toLowerCase().includes(keyword));
-        };
-        // ----------------------------------------------
+        // Terapkan Logika Tampilan (Mencari vs Normal)
+        if (keyword.length >= 2) {
+            // MODE PENCARIAN GLOBAL: Cari di seluruh data database Firebase (Minimal 2 Huruf)
+            let searchResults = items.filter(x => 
+                (x.nopol && x.nopol.toLowerCase().includes(keyword)) ||
+                (x.nama && x.nama.toLowerCase().includes(keyword)) ||
+                (x.tel && x.tel.toLowerCase().includes(keyword)) ||
+                (x.tipe && x.tipe.toLowerCase().includes(keyword))
+            );
 
-        if (mode === 'today') {
-            // Saring data khusus untuk ditampilkan
-            let displayMenginap = menginap.filter(isMatch);
-            let displayHariIni = hariIni.filter(isMatch);
-
-            if (displayMenginap.length > 0) {
-                displayMenginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
-                let lastDate = "";
-                displayMenginap.forEach((x, i) => {
-                    if (x.tanggalMasuk !== lastDate) {
-                        addSeparator(tbody, `📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}`, "sep-menginap");
-                        lastDate = x.tanggalMasuk;
-                    }
-                    addRow(tbody, x, i + 1);
-                });
-            }
+            addSeparator(tbody, `🔍 HASIL PENCARIAN SEMUA DATA: "${keyword.toUpperCase()}"`, "sep-today");
+            searchResults.sort((a,b)=> a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
             
-            addSeparator(tbody, "🚗 PENERIMAAN HARI INI", "sep-today");
-            displayHariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
         } else {
-            let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
-            let displayHistori = histori.filter(isMatch); // Saring data histori
+            // MODE NORMAL: Tampilkan Hari Ini & Menginap, atau Filter Tanggal
+            let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
+            let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
 
-            addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
-            displayHistori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+            if (mode === 'today') {
+                if (menginap.length > 0) {
+                    menginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
+                    let lastDate = "";
+                    menginap.forEach((x, i) => {
+                        if (x.tanggalMasuk !== lastDate) {
+                            addSeparator(tbody, `📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}`, "sep-menginap");
+                            lastDate = x.tanggalMasuk;
+                        }
+                        addRow(tbody, x, i + 1);
+                    });
+                }
+                
+                addSeparator(tbody, "🚗 PENERIMAAN HARI INI", "sep-today");
+                hariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+            } else {
+                let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
+                addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
+                histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+            }
         }
 
+        // Kembalikan kursor ke input yang sedang diketik (agar tidak loncat saat update realtime)
         if (activeId) {
             const elToFocus = document.getElementById(activeId);
             if (elToFocus) {
                 elToFocus.focus();
-                try {
-                    elToFocus.setSelectionRange(selectionStart, selectionStart);
-                } catch(e) {}
+                try { elToFocus.setSelectionRange(selectionStart, selectionStart); } catch(e) {}
             }
         }
     }
