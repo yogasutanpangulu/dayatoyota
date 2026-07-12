@@ -1692,13 +1692,15 @@ li.innerHTML = `
         window.print();
     }
 
-    window.onload = function() {
+        window.onload = function() {
         loadStorageList();
         syncMasterDatabaseCloud(); 
         renderMasterTable();
         updateAllDropdowns();
         initDefaultLainTable(); 
+        startLiveSync(); // <-- TAMBAHAN: Memulai pantauan layar ala spreadsheet otomatis
     };
+
 </script>
 </body>
 </html>
