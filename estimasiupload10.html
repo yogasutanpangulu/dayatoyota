@@ -759,6 +759,58 @@
         document.getElementById('top-anchor').scrollIntoView({ behavior: 'smooth' });
     }
 
+        // --- FITUR SPREADSHEET KANVAS BERSAMA ---
+    function syncLiveDraft() {
+        if (!window.db || !window.dbRef || !window.dbSet) return;
+        
+        const estimationData = {
+            nopol: document.getElementById('nopol').value.toUpperCase() || "",
+            jasa: [], lain: [], part: []
+        };
+
+        document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
+            estimationData.jasa.push({
+                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value,
+                discType: row.querySelector('.disc-type-select').value
+            });
+        });
+        document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
+            estimationData.lain.push({
+                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-select').value, disc: row.querySelector('.disc-input').value,
+                discType: row.querySelector('.disc-type-select').value
+            });
+        });
+        document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
+            estimationData.part.push({
+                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
+                name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value,
+                discType: row.querySelector('.disc-type-select').value
+            });
+        });
+
+        const draftRef = window.dbRef(window.db, 'estimasi_live_draft');
+        window.dbSet(draftRef, estimationData);
+    }
+
+    function startLiveSync() {
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const draftRef = window.dbRef(window.db, 'estimasi_live_draft');
+            window.dbOnValue(draftRef, (snapshot) => {
+                const est = snapshot.val();
+                if (est) {
+                    const isTyping = document.activeElement.tagName;
+                    // Tahan update layar jika ada kolom yang sedang aktif diketik agar kursor tidak hilang
+                    if (isTyping === "INPUT" || isTyping === "SELECT") return; 
+                    
+                    injectDataToFormElements(est);
+                }
+            });
+        }
+    }
+    // --- BATAS FITUR SPREADSHEET ---
+
         function calculateAll() {
         let subtotalJasa = 0;
         let discTotalJasa = 0;
