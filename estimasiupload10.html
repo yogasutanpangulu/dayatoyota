@@ -811,7 +811,7 @@
     }
     // --- BATAS FITUR SPREADSHEET ---
 
-        function calculateAll() {
+            function calculateAll() {
         let subtotalJasa = 0;
         let discTotalJasa = 0;
         
@@ -902,11 +902,12 @@
 
         compilePartCodes();
 
-        // --- TAMBAHAN AUTO-SAVE 1.5 DETIK ---
+        // --- TAMBAHAN AUTO-SAVE ALA SPREADSHEET ---
         clearTimeout(window.autoSaveTimer);
         window.autoSaveTimer = setTimeout(() => {
-            if (document.getElementById('nopol').value.trim() !== "") {
-                saveEstimation(true); // Simpan otomatis tanpa memunculkan pesan sukses di layar
+            // Langsung kirim semua ketikan ke Kanvas Bersama tanpa butuh pengecekan Nopol
+            if (typeof syncLiveDraft === "function") {
+                syncLiveDraft(); 
             }
         }, 1500);
         // --- BATAS TAMBAHAN ---
