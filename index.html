@@ -347,30 +347,51 @@
 
         if (activeId) {
             const elToFocus = document.getElementById(activeId);
-            if (elToFocus) {
-                elToFocus.focus();
-                try {
-                    elToFocus.setSelectionRange(selectionStart, selectionStart);
-                } catch(e) { } // Mencegah error pada tipe input yang tidak support selectionRange
-            }
-        }
-    }
+    function render() {
+        const tbody = document.getElementById('mainTable');
+        if(!tbody) return;
 
+        const activeEl = document.activeElement;
+        let activeId = null;
+        let selectionStart = 0;
+        if (activeEl && activeEl.tagName === 'INPUT') {
+            activeId = activeEl.id;
+            selectionStart = activeEl.selectionStart;
+        }
 
         tbody.innerHTML = '';
         let items = Object.values(allData);
 
-        // KEMBALIKAN LOGIKA FILTER ASLI
+        // --- 1. LOGIKA ASLI (TIDAK DIUBAH SAMA SEKALI) ---
         let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
         let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
 
+        // PENTING: Job Counter diupdate sebelum pencarian agar angkanya tidak hilang
         updateTopBarCounter(hariIni);
 
+        // --- 2. LOGIKA PENCARIAN TEKS (AMAN) ---
+        const searchInput = document.getElementById('searchInput');
+        const keyword = searchInput ? searchInput.value.toLowerCase() : '';
+
+        const isMatch = (x) => {
+            if (!keyword) return true; 
+            const nopol = (x.nopol || "").toLowerCase();
+            const nama = (x.nama || "").toLowerCase();
+            const tel = (x.tel || "").toLowerCase();
+            const tipe = (x.tipe || "").toLowerCase();
+            return nopol.includes(keyword) || nama.includes(keyword) || tel.includes(keyword) || tipe.includes(keyword);
+        };
+
+        // --- 3. RENDER DATA ---
         if (mode === 'today') {
-            if (menginap.length > 0) {
-                menginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
+            // Saring data HANYA untuk tampilan di layar, data asli aman
+            let displayMenginap = menginap.filter(isMatch);
+            let displayHariIni = hariIni.filter(isMatch);
+
+            if (displayMenginap.length > 0) {
+                displayMenginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
                 let lastDate = "";
-                menginap.forEach((x, i) => {
+                displayMenginap.forEach((x, i) => {
                     if (x.tanggalMasuk !== lastDate) {
                         addSeparator(tbody, `📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}`, "sep-menginap");
                         lastDate = x.tanggalMasuk;
@@ -380,18 +401,26 @@
             }
             
             addSeparator(tbody, "🚗 PENERIMAAN HARI INI", "sep-today");
-            hariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+            displayHariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+            
         } else {
+            // LOGIKA PENCARIAN TANGGAL ASLI
             let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
+            
+            // Saring data histori HANYA untuk tampilan layar
+            let displayHistori = histori.filter(isMatch);
+
             addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
-            histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+            displayHistori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
         }
 
         if (activeId) {
             const elToFocus = document.getElementById(activeId);
             if (elToFocus) {
                 elToFocus.focus();
-                elToFocus.setSelectionRange(selectionStart, selectionStart);
+                try {
+                    elToFocus.setSelectionRange(selectionStart, selectionStart);
+                } catch(e) { } 
             }
         }
     }
