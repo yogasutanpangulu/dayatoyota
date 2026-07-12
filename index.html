@@ -97,8 +97,11 @@
             <input type="date" id="endDl" style="width:130px">
             <button class="btn-download" onclick="downloadData()">DOWNLOAD EXCEL</button>
         </div>
+                <!-- Tambahan Input Pencarian -->
+        <input type="text" id="searchInput" placeholder="Cari Nopol, Nama, Tipe..." style="width:180px; background:white; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-size:13px;" oninput="render()">
+
         <input type="date" id="filterDate" style="width:130px; background:white">
-        <button class="btn-date" onclick="setMode('date')">CARI</button>
+        <button class="btn-date" onclick="setMode('date')">CARI TGL</button>
         <button class="btn-date" onclick="setMode('today')">HARI INI</button>
     </div>
 
@@ -280,7 +283,7 @@
         if(target) target.innerHTML = html;
     }
 
-    function render() {
+        function render() {
         const tbody = document.getElementById('mainTable');
         if(!tbody) return;
 
@@ -291,6 +294,68 @@
             activeId = activeEl.id;
             selectionStart = activeEl.selectionStart;
         }
+
+        tbody.innerHTML = '';
+        let items = Object.values(allData);
+
+        // --- LOGIKA PENCARIAN BARU ---
+        const searchInput = document.getElementById('searchInput');
+        const keyword = searchInput ? searchInput.value.toLowerCase() : '';
+
+        const applySearch = (arr) => {
+            if (!keyword) return arr; // Jika input kosong, tampilkan semua
+            return arr.filter(x => 
+                (x.nopol && x.nopol.toLowerCase().includes(keyword)) ||
+                (x.nama && x.nama.toLowerCase().includes(keyword)) ||
+                (x.tel && x.tel.toLowerCase().includes(keyword)) ||
+                (x.tipe && x.tipe.toLowerCase().includes(keyword))
+            );
+        };
+        // -----------------------------
+
+        let menginap = items.filter(x => x.tanggalMasuk < TODAY_STR && (!x.tanggalDiserahkan || x.tanggalDiserahkan === ""));
+        let hariIni = items.filter(x => x.tanggalMasuk === TODAY_STR);
+
+        // Terapkan filter pencarian pada data hari ini dan menginap
+        menginap = applySearch(menginap);
+        hariIni = applySearch(hariIni);
+
+        updateTopBarCounter(hariIni);
+
+        if (mode === 'today') {
+            if (menginap.length > 0) {
+                menginap.sort((a, b) => a.tanggalMasuk.localeCompare(b.tanggalMasuk));
+                let lastDate = "";
+                menginap.forEach((x, i) => {
+                    if (x.tanggalMasuk !== lastDate) {
+                        addSeparator(tbody, `📌 MENGINAP - PENERIMAAN TANGGAL: ${x.tanggalMasuk}`, "sep-menginap");
+                        lastDate = x.tanggalMasuk;
+                    }
+                    addRow(tbody, x, i + 1);
+                });
+            }
+            
+            addSeparator(tbody, "🚗 PENERIMAAN HARI INI", "sep-today");
+            hariIni.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+        } else {
+            let histori = items.filter(x => x.tanggalMasuk === selectedDate || x.tanggalDiserahkan === selectedDate);
+            histori = applySearch(histori); // Terapkan pencarian juga di menu riwayat tanggal
+            
+            addSeparator(tbody, "🔍 DATA TANGGAL: " + selectedDate, "");
+            histori.sort((a,b)=>a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+        }
+
+        if (activeId) {
+            const elToFocus = document.getElementById(activeId);
+            if (elToFocus) {
+                elToFocus.focus();
+                try {
+                    elToFocus.setSelectionRange(selectionStart, selectionStart);
+                } catch(e) { } // Mencegah error pada tipe input yang tidak support selectionRange
+            }
+        }
+    }
+
 
         tbody.innerHTML = '';
         let items = Object.values(allData);
