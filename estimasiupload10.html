@@ -141,8 +141,6 @@
             background: transparent;
             font-size: inherit;
             padding: 2px;
-            white-space: normal; /* Tambahkan ini */
-            word-wrap: break-word; /* Tambahkan ini */
         }
         input[type="text"]:focus, input[type="number"]:focus, select.item-select:focus {
             outline: none;
@@ -421,29 +419,6 @@
                 text-transform: uppercase;
             }
         }
-
-        textarea.item-name {
-    width: 100%;
-    min-height: 30px;
-    border: none;
-    border-bottom: 1px dashed #cccccc;
-    background: transparent;
-    font-family: inherit;
-    font-size: 9.5pt;
-    padding: 5px;
-    resize: none; /* Mencegah user resize manual */
-    overflow: hidden; /* Sembunyikan scrollbar */
-    display: block;
-}
-
-/* Biarkan sel tabel rata atas */
-td {
-    vertical-align: top;
-}
-        
-        td {
-    vertical-align: top; /* Memastikan isi teks rata atas saat sel melebar ke bawah */
-}
     </style>
 </head>
 <body>
@@ -977,7 +952,7 @@ td {
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
+                    <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
                 </div>`;
         } else {
             inputTdHtml = `
