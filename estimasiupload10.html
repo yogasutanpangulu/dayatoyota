@@ -494,11 +494,11 @@ td {
                     </div>
                 </td>
                 <td>
-                    <div class="input-with-copy">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()">
-                    </div>
-                </td>
+    <div class="input-with-copy">
+        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+        <textarea class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()"></textarea>
+    </div>
+</td>
                 <td>
                     <div class="currency-box">
                         <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
@@ -571,11 +571,11 @@ td {
                     </div>
                 </td>
                 <td>
-                    <div class="input-with-copy">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
-                    </div>
-                </td>
+    <div class="input-with-copy">
+        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+        <textarea class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()"></textarea>
+    </div>
+</td>
                 <td>
                     <div class="currency-box">
                         <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
@@ -977,10 +977,10 @@ td {
         if (type === 'part' || type === 'jasa') {
             const placeholderText = type === 'jasa' ? 'Pilih langsung dari Master Data JASA di bawah...' : 'Pilih langsung dari Master Data di bawah...';
             inputTdHtml = `
-                <div class="input-with-copy">
-                    <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
-                </div>`;
+    <div class="input-with-copy">
+        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+        <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()" style="width:100%; border:none; border-bottom:1px dashed #ccc; background:transparent; font-family:inherit; resize:vertical; min-height:25px;"></textarea>
+    </div>`;
         } else {
             inputTdHtml = `
                 <div class="input-with-copy">
