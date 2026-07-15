@@ -422,20 +422,25 @@
             }
         }
 
-        input.item-name {
-        white-space: normal;
-        word-wrap: break-word;
-        word-break: break-word;
-        height: auto;
-        min-height: 30px; 
-        padding: 5px;
-        display: block;
-    }
+        textarea.item-name {
+    width: 100%;
+    min-height: 30px;
+    border: none;
+    border-bottom: 1px dashed #cccccc;
+    background: transparent;
+    font-family: inherit;
+    font-size: 9.5pt;
+    padding: 5px;
+    resize: none; /* Mencegah user resize manual */
+    overflow: hidden; /* Sembunyikan scrollbar */
+    display: block;
+}
 
-    td {
-        vertical-align: top;
-    }
-
+/* Biarkan sel tabel rata atas */
+td {
+    vertical-align: top;
+}
+        
         td {
     vertical-align: top; /* Memastikan isi teks rata atas saat sel melebar ke bawah */
 }
@@ -972,7 +977,7 @@
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
+                    <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
                 </div>`;
         } else {
             inputTdHtml = `
