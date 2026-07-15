@@ -141,6 +141,8 @@
             background: transparent;
             font-size: inherit;
             padding: 2px;
+            white-space: normal; /* Tambahkan ini */
+            word-wrap: break-word; /* Tambahkan ini */
         }
         input[type="text"]:focus, input[type="number"]:focus, select.item-select:focus {
             outline: none;
@@ -419,6 +421,24 @@
                 text-transform: uppercase;
             }
         }
+
+        input.item-name {
+        white-space: normal;
+        word-wrap: break-word;
+        word-break: break-word;
+        height: auto;
+        min-height: 30px; 
+        padding: 5px;
+        display: block;
+    }
+
+    td {
+        vertical-align: top;
+    }
+
+        td {
+    vertical-align: top; /* Memastikan isi teks rata atas saat sel melebar ke bawah */
+}
     </style>
 </head>
 <body>
