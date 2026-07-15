@@ -1016,10 +1016,7 @@ document.addEventListener('input', function (event) {
             inputTdHtml = `
     <div class="input-with-copy">
         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-        <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()" style="width:100%; border:none; border-bottom:1px dashed #ccc; background:transparent; font-family:inherit; resize:vertical; min-height:25px;"></textarea>
-    </div>`;
-        } else {
-            inputTdHtml = `
+        <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()"></textarea>
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
                     <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
