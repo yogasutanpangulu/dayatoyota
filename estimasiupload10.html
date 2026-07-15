@@ -143,41 +143,19 @@
             padding: 2px;
         }
 
-        /* Styling textarea agar fleksibel & menyesuaikan secara ringkas */
-textarea.item-name {
-    width: 100%;
-    border: none;
-    border-bottom: 1px dashed #cccccc;
-    background: transparent;
-    font-family: inherit;
-    font-size: 9.5pt;
-    padding: 2px 4px;
-    resize: none; /* Hilangkan grip resize manual agar rapi */
-    height: 24px;  /* Tinggi default 1 baris */
-    line-height: 1.2;
-    overflow: hidden; /* Sembunyikan scrollbar */
-    display: block;
-    box-sizing: border-box;
+        input[type="text"].item-name {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-all !important;
+    height: auto !important;
+    min-height: 25px;
+    padding: 5px;
+    display: block !important;
 }
 
-textarea.item-name:focus {
-    outline: none;
-    border-bottom: 1px solid #000000;
-}
-
-/* Penyelarasan sel tabel agar rapat secara vertikal */
+/* Memastikan sel tabel tetap rapi saat teks panjang */
 td {
-    padding: 2px 4px !important;
-    vertical-align: middle !important;
-}
-
-/* CSS Khusus saat Print agar text wrap tetap tercetak sempurna */
-@media print {
-    textarea.item-name {
-        border-bottom: none !important;
-        height: auto !important;
-        overflow: visible !important;
-    }
+    vertical-align: top !important; 
 }
         
         input[type="text"]:focus, input[type="number"]:focus, select.item-select:focus {
@@ -734,21 +712,6 @@ td {
     
     let masterDatabase = [];
 
-    // Fungsi untuk menyesuaikan tinggi textarea secara otomatis sesuai panjang teks
-function autoResizeTextarea(textarea) {
-    textarea.style.height = '24px'; // Reset ke tinggi 1 baris
-    if (textarea.scrollHeight > 24) {
-        textarea.style.height = textarea.scrollHeight + 'px'; // Kembangkan jika ada wrap text
-    }
-}
-
-// Event delegation agar berlaku untuk semua input textarea (termasuk baris baru yang ditambah)
-document.addEventListener('input', function (event) {
-    if (event.target && event.target.classList.contains('item-name')) {
-        autoResizeTextarea(event.target);
-    }
-});
-    
     function saveMasterDBToCloud(data) {
         if (window.db && window.dbRef && window.dbSet) {
             // Ubah array menjadi object agar lebih stabil di Firebase
@@ -1016,7 +979,10 @@ document.addEventListener('input', function (event) {
             inputTdHtml = `
     <div class="input-with-copy">
         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-        <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()"></textarea>
+        <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()" style="width:100%; border:none; border-bottom:1px dashed #ccc; background:transparent; font-family:inherit; resize:vertical; min-height:25px;"></textarea>
+    </div>`;
+        } else {
+            inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
                     <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
@@ -1536,9 +1502,7 @@ document.addEventListener('input', function (event) {
                 const row = jasaBody.querySelector('tr:nth-last-child(3)');
                 row.querySelector('.qty-input').value = j.qty;
                 row.querySelector('.price-input').value = j.price;
-                const nameInput = row.querySelector('.item-name');
-nameInput.value = j.name;
-autoResizeTextarea(nameInput);
+                row.querySelector('.item-name').value = j.name;
                 if(j.disc) row.querySelector('.disc-input').value = j.disc;
                 if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
             });
@@ -1552,9 +1516,7 @@ autoResizeTextarea(nameInput);
                 const row = partBody.querySelector('tr:nth-last-child(3)');
                 row.querySelector('.qty-input').value = p.qty;
                 row.querySelector('.price-input').value = p.price;
-                const nameInput = row.querySelector('.item-name');
-nameInput.value = j.name;
-autoResizeTextarea(nameInput);
+                row.querySelector('.item-name').value = p.name;
                 if(p.disc) row.querySelector('.disc-input').value = p.disc;
                 if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
             });
