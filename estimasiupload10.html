@@ -113,11 +113,11 @@
             justify-content: flex-end;
         }
         .input-with-copy {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            gap: 6px;
-        }
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    gap: 6px;
+}
         
         .row-total-label {
             font-weight: bold;
@@ -440,6 +440,23 @@
 .item-name:focus {
     outline: none;
     border-bottom: 1px solid #000;
+}
+
+        .item-name {
+    width: 100%;
+    min-height: 24px;
+    height: 24px;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 18px;
+    display: block;
+}
+
+        #table-jasa td,
+#table-part td {
+    vertical-align: top;
 }
     </style>
 </head>
@@ -1730,8 +1747,13 @@ li.innerHTML = `
     };
 
     function autoResize(el) {
-    el.style.height = "24px";
+    el.style.height = "auto";
     el.style.height = el.scrollHeight + "px";
+
+    const row = el.closest('tr');
+    if(row){
+        row.style.height = "auto";
+    }
 }
     
 </script>
