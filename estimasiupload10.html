@@ -427,18 +427,15 @@
         .item-name {
     width: 100%;
     min-height: 24px;
-    max-height: 120px;
+    height: auto !important;
     resize: none;
-    overflow: hidden;
+    overflow-y: hidden;
+    overflow-x: hidden;
     white-space: pre-wrap;
     word-break: break-word;
-    border: none;
-    border-bottom: 1px dashed #cccccc;
-    background: transparent;
-    font-size: inherit;
-    font-family: inherit;
-    padding: 2px;
     line-height: 18px;
+    display: block;
+    box-sizing: border-box;
 }
 
 .item-name:focus {
@@ -1119,6 +1116,10 @@
             targetRow = updatedRows[updatedRows.length - 1];
         }
 
+        const txt = targetRow.querySelector('.item-name');
+        txt.value = name;
+        autoResize(txt);
+        
         targetRow.querySelector('.item-name').value = name;
         targetRow.querySelector('.price-input').value = price;
 
@@ -1773,15 +1774,15 @@ li.innerHTML = `
     };
 
     function autoResize(el) {
-    el.style.height = "auto";
-    el.style.height = (el.scrollHeight + 2) + "px";
-
-    const td = el.closest('td');
-    const tr = el.closest('tr');
-
-    if (td) td.style.height = "auto";
-    if (tr) tr.style.height = "auto";
+    requestAnimationFrame(() => {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+    });
 }
+
+    window.addEventListener('load', () => {
+    document.querySelectorAll('.item-name').forEach(autoResize);
+});
     
 </script>
 </body>
