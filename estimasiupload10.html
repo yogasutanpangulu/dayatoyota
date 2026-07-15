@@ -112,11 +112,15 @@
             width: 100%;
             justify-content: flex-end;
         }
-        .input-with-copy {
+       .input-with-copy {
     display: flex;
     align-items: flex-start;
     width: 100%;
     gap: 6px;
+}
+
+.input-with-copy textarea {
+    flex: 1;
 }
         
         .row-total-label {
@@ -457,6 +461,28 @@
         #table-jasa td,
 #table-part td {
     vertical-align: top;
+}
+
+        #table-jasa tr,
+#table-part tr {
+    height: auto !important;
+}
+
+#table-jasa td,
+#table-part td {
+    height: auto !important;
+    overflow: visible !important;
+    vertical-align: top !important;
+}
+
+#table-jasa textarea.item-name,
+#table-part textarea.item-name {
+    width: 100%;
+    min-height: 24px;
+    resize: none;
+    overflow: hidden;
+    display: block;
+    box-sizing: border-box;
 }
     </style>
 </head>
@@ -1748,12 +1774,13 @@ li.innerHTML = `
 
     function autoResize(el) {
     el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
+    el.style.height = (el.scrollHeight + 2) + "px";
 
-    const row = el.closest('tr');
-    if(row){
-        row.style.height = "auto";
-    }
+    const td = el.closest('td');
+    const tr = el.closest('tr');
+
+    if (td) td.style.height = "auto";
+    if (tr) tr.style.height = "auto";
 }
     
 </script>
