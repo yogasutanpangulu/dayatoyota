@@ -419,6 +419,28 @@
                 text-transform: uppercase;
             }
         }
+
+        .item-name {
+    width: 100%;
+    min-height: 24px;
+    max-height: 120px;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border: none;
+    border-bottom: 1px dashed #cccccc;
+    background: transparent;
+    font-size: inherit;
+    font-family: inherit;
+    padding: 2px;
+    line-height: 18px;
+}
+
+.item-name:focus {
+    outline: none;
+    border-bottom: 1px solid #000;
+}
     </style>
 </head>
 <body>
@@ -469,7 +491,7 @@
                 <td>
                     <div class="input-with-copy">
                         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()">
+                        <textarea class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="autoResize(this);calculateAll()"></textarea>
                     </div>
                 </td>
                 <td>
@@ -546,7 +568,7 @@
                 <td>
                     <div class="input-with-copy">
                         <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
+                        <textarea class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="autoResize(this);calculateAll()"></textarea>
                     </div>
                 </td>
                 <td>
@@ -952,7 +974,7 @@
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
+                    <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="autoResize(this);calculateAll()"></textarea>
                 </div>`;
         } else {
             inputTdHtml = `
@@ -1470,30 +1492,36 @@
         const jasaBody = document.querySelector('#table-jasa tbody');
         jasaBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
         if (est.jasa) {
-            est.jasa.forEach(j => {
-                addRow('table-jasa');
-                const row = jasaBody.querySelector('tr:nth-last-child(3)');
-                row.querySelector('.qty-input').value = j.qty;
-                row.querySelector('.price-input').value = j.price;
-                row.querySelector('.item-name').value = j.name;
-                if(j.disc) row.querySelector('.disc-input').value = j.disc;
-                if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
-            });
-        }
+    est.jasa.forEach(j => {
+        addRow('table-jasa');
+        const row = jasaBody.querySelector('tr:nth-last-child(3)');
+        row.querySelector('.qty-input').value = j.qty;
+        row.querySelector('.price-input').value = j.price;
+
+        row.querySelector('.item-name').value = j.name;
+        autoResize(row.querySelector('.item-name'));
+
+        if(j.disc) row.querySelector('.disc-input').value = j.disc;
+        if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
+    });
+}
 
         const partBody = document.querySelector('#table-part tbody');
         partBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
         if (est.part) {
-            est.part.forEach(p => {
-                addRow('table-part');
-                const row = partBody.querySelector('tr:nth-last-child(3)');
-                row.querySelector('.qty-input').value = p.qty;
-                row.querySelector('.price-input').value = p.price;
-                row.querySelector('.item-name').value = p.name;
-                if(p.disc) row.querySelector('.disc-input').value = p.disc;
-                if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
-            });
-        }
+    est.part.forEach(p => {
+        addRow('table-part');
+        const row = partBody.querySelector('tr:nth-last-child(3)');
+        row.querySelector('.qty-input').value = p.qty;
+        row.querySelector('.price-input').value = p.price;
+
+        row.querySelector('.item-name').value = p.name;
+        autoResize(row.querySelector('.item-name'));
+
+        if(p.disc) row.querySelector('.disc-input').value = p.disc;
+        if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
+    });
+}
 
         const tableLain = document.getElementById('table-lain');
         let lainBody = tableLain.getElementsByTagName('tbody')[0];
@@ -1701,6 +1729,11 @@ li.innerHTML = `
         startLiveSync(); // <-- TAMBAHAN: Memulai pantauan layar ala spreadsheet otomatis
     };
 
+    function autoResize(el) {
+    el.style.height = "24px";
+    el.style.height = el.scrollHeight + "px";
+}
+    
 </script>
 </body>
 </html>
