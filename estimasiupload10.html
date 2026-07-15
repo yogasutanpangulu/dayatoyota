@@ -142,22 +142,6 @@
             font-size: inherit;
             padding: 2px;
         }
-
-        input[type="text"].item-name {
-    white-space: normal !important;
-    word-wrap: break-word !important;
-    word-break: break-all !important;
-    height: auto !important;
-    min-height: 25px;
-    padding: 5px;
-    display: block !important;
-}
-
-/* Memastikan sel tabel tetap rapi saat teks panjang */
-td {
-    vertical-align: top !important; 
-}
-        
         input[type="text"]:focus, input[type="number"]:focus, select.item-select:focus {
             outline: none;
             border-bottom: 1px solid #000000;
@@ -435,17 +419,6 @@ td {
                 text-transform: uppercase;
             }
         }
-        input[type="text"].item-name {
-        border-bottom: none !important;
-        background: transparent !important;
-        word-break: break-word !important; /* Tambahan ini untuk keamanan ekstra saat print */
-        white-space: normal !important;    /* Pastikan tetap wrap */
-    }
-    td {
-        height: auto !important;
-        vertical-align: top !important;
-    }
-}
     </style>
 </head>
 <body>
@@ -494,11 +467,11 @@ td {
                     </div>
                 </td>
                 <td>
-    <div class="input-with-copy">
-        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-        <textarea class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()"></textarea>
-    </div>
-</td>
+                    <div class="input-with-copy">
+                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                        <input type="text" class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()">
+                    </div>
+                </td>
                 <td>
                     <div class="currency-box">
                         <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
@@ -571,11 +544,11 @@ td {
                     </div>
                 </td>
                 <td>
-    <div class="input-with-copy">
-        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-        <textarea class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()"></textarea>
-    </div>
-</td>
+                    <div class="input-with-copy">
+                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                        <input type="text" class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
+                    </div>
+                </td>
                 <td>
                     <div class="currency-box">
                         <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
@@ -977,10 +950,10 @@ td {
         if (type === 'part' || type === 'jasa') {
             const placeholderText = type === 'jasa' ? 'Pilih langsung dari Master Data JASA di bawah...' : 'Pilih langsung dari Master Data di bawah...';
             inputTdHtml = `
-    <div class="input-with-copy">
-        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-        <textarea class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()" style="width:100%; border:none; border-bottom:1px dashed #ccc; background:transparent; font-family:inherit; resize:vertical; min-height:25px;"></textarea>
-    </div>`;
+                <div class="input-with-copy">
+                    <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                    <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
+                </div>`;
         } else {
             inputTdHtml = `
                 <div class="input-with-copy">
