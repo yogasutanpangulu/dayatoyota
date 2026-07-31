@@ -153,6 +153,35 @@
     </div>
 </div>
 
+<!-- Modal Pop-up Komentar -->
+<div id="commentModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:450px; max-width:90%; display:flex; flex-direction:column; gap:10px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="margin:0; font-size:16px;">💬 Catatan & Gambar</h3>
+        
+        <!-- Kolom Textarea bisa di adjust (resize) -->
+        <textarea id="modalCommentText" rows="4" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; resize:vertical; font-family:inherit; font-size:13px; box-sizing:border-box;" placeholder="Ketik komentar di sini... Tekan Enter untuk baris baru..."></textarea>
+        
+        <!-- Area Upload Gambar -->
+        <div style="border: 2px dashed #cbd5e1; padding: 15px; border-radius: 6px; text-align: center; background:#f8fafc;">
+            <label style="cursor:pointer; font-size:13px; font-weight:bold; color:#4361ee; display:inline-block;">
+                📸 Klik Disini Untuk Upload Gambar
+                <input type="file" id="modalCommentImage" accept="image/*" style="display:none;" onchange="previewImage(event)">
+            </label>
+            
+            <!-- Tempat Preview Gambar -->
+            <div id="imagePreviewContainer" style="margin-top:10px; display:none; position:relative; display:inline-block;">
+                <img id="imagePreview" style="max-width:100%; max-height:200px; border-radius:6px; border:1px solid #e2e8f0;">
+                <button onclick="removeImage()" style="position:absolute; top:-10px; right:-10px; background:#ef4444; color:white; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.2);" title="Hapus Gambar">×</button>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+            <button onclick="tutupModalKomentar()" style="background:#e2e8f0; color:#334155; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:bold;">Batal</button>
+            <button onclick="simpanKomentar()" style="background:#4361ee; color:white; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:bold;">Simpan</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const d = new Date();
     const TODAY_STR = d.toISOString().split('T')[0];
@@ -246,6 +275,86 @@
         });
     }
 
+// --- FITUR KOMENTAR & GAMBAR ---
+    let activeCommentId = null;
+    let currentImageBase64 = "";
+
+    window.tambahKomentar = function(id) {
+        activeCommentId = id;
+        const data = allData[id];
+        if (!data) return;
+        
+        // Isi text area dengan komentar lama (jika ada)
+        document.getElementById('modalCommentText').value = data.comment || "";
+        currentImageBase64 = data.commentImage || "";
+        
+        // Tampilkan gambar lama (jika ada)
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        if (currentImageBase64) {
+            document.getElementById('imagePreview').src = currentImageBase64;
+            previewContainer.style.display = "inline-block";
+        } else {
+            document.getElementById('imagePreview').src = "";
+            previewContainer.style.display = "none";
+        }
+        
+        // Munculkan Modal Pop-up
+        document.getElementById('commentModal').style.display = "flex";
+    }
+
+    window.tutupModalKomentar = function() {
+        document.getElementById('commentModal').style.display = "none";
+        document.getElementById('modalCommentImage').value = ""; // Reset input file
+    }
+
+    window.simpanKomentar = function() {
+        if (!activeCommentId) return;
+        const newText = document.getElementById('modalCommentText').value;
+        
+        // Simpan text dan gambar ke Firebase
+        window.updateData(activeCommentId, 'comment', newText);
+        window.updateData(activeCommentId, 'commentImage', currentImageBase64);
+        
+        tutupModalKomentar();
+    }
+
+    window.previewImage = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Kompresi Gambar agar tidak membuat database lambat
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 600; // Lebar maksimal gambar
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Ubah gambar ke format teks base64 kualitas 70%
+                currentImageBase64 = canvas.toDataURL('image/jpeg', 0.7); 
+                
+                document.getElementById('imagePreview').src = currentImageBase64;
+                document.getElementById('imagePreviewContainer').style.display = "inline-block";
+            }
+            img.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+
+    window.removeImage = function() {
+        currentImageBase64 = "";
+        document.getElementById('imagePreview').src = "";
+        document.getElementById('imagePreviewContainer').style.display = "none";
+        document.getElementById('modalCommentImage').value = "";
+    }
+    // --- AKHIR FITUR KOMENTAR & GAMBAR ---
+
     function getTimeOptions(selected) {
         let html = '<option value="">- Jam -</option>';
         for(let h=7; h<=17; h++) {
@@ -318,7 +427,25 @@
             );
 
             addSeparator(tbody, `🔍 HASIL PENCARIAN SEMUA DATA: "${keyword.toUpperCase()}"`, "sep-today");
-            searchResults.sort((a,b)=> a.id - b.id).forEach((x, i) => addRow(tbody, x, i + 1));
+            
+            // 1. Urutkan hasil pencarian berdasarkan tanggal (terbaru ke terlama)
+            searchResults.sort((a,b) => {
+                let dateA = a.tanggalMasuk || "";
+                let dateB = b.tanggalMasuk || "";
+                if (dateA === dateB) return a.id - b.id;
+                return dateB.localeCompare(dateA); 
+            });
+
+            // 2. Tampilkan hasil dengan menambahkan separator tanggal buat
+            let lastSearchDate = "";
+            let searchCounter = 1;
+            searchResults.forEach(x => {
+                if (x.tanggalMasuk !== lastSearchDate) {
+                    addSeparator(tbody, `📅 DIBUAT TANGGAL: ${x.tanggalMasuk || "Tidak diketahui"}`, "sep-menginap");
+                    lastSearchDate = x.tanggalMasuk;
+                }
+                addRow(tbody, x, searchCounter++);
+            });
             
         } else {
             // MODE NORMAL: Tampilkan Hari Ini & Menginap, atau Filter Tanggal
@@ -364,7 +491,7 @@
     }
 
     function addRow(tbody, x, no) {
-        const tr = document.createElement('tr');
+       const tr = document.createElement('tr');
         let rowColorClass = 'row-normal';
         const sekarang = new Date();
         const jamSekarang = `${String(sekarang.getHours()).padStart(2,'0')}:${String(sekarang.getMinutes()).padStart(2,'0')}`;
@@ -382,6 +509,11 @@
             <td style="text-align:center; color:#94a3b8; font-weight:bold; display: flex; align-items: center; justify-content: center; gap: 6px; border-bottom: none; height: 33px;">
                 <span>${no}</span>
                 <button id="copy-btn-${x.id}" class="copy-btn" onclick="copyRowData('${x.id}')" title="Salin Nopol, Nama, Telp">📋</button>
+                
+                <!-- TOMBOL KOMENTAR YANG SUDAH DIUPDATE -->
+                <button class="copy-btn" onclick="tambahKomentar('${x.id}')" title="${x.comment ? 'Catatan: ' + x.comment : 'Tambah Catatan'}">
+                    ${(x.comment || x.commentImage) ? '💬' : '🗨️'}
+                </button>
             </td>
             <td><input id="input-nopol-${x.id}" value="${x.nopol}" placeholder="Nopol" onpaste="handlePaste(event,'${x.id}')" oninput="updateData('${x.id}','nopol',this.value)"></td>
             <td><input id="input-nama-${x.id}" class="input-nama" value="${x.nama}" placeholder="Nama" oninput="updateData('${x.id}','nama',this.value)"></td>
