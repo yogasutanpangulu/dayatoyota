@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Rekap UE & Revenue Harian - ONLINE</title>
+    
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow-x: auto;}
+        h2 { color: #d9534f; margin-top: 0; text-align: center; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+        .subtitle { text-align: center; color: #666; margin-top: -15px; margin-bottom: 20px; font-size: 13px; font-weight: bold;}
+        .subtitle span { color: #28a745; }
+        
+        label { font-weight: bold; font-size: 14px; margin-right: 5px;}
+        select, button, input[type="number"] { padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;}
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s;}
+        button:hover { background-color: #0056b3; }
+        button.btn-simpan { background-color: #28a745; margin-left: 10px;}
+        button.btn-simpan:hover { background-color: #218838; }
+        button:disabled { background-color: #6c757d !important; cursor: not-allowed; }
+        
+        .header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
+        .filter-group { display: flex; gap: 15px; align-items: center; background: #e9ecef; padding: 10px 15px; border-radius: 8px; border: 1px solid #ced4da;}
+        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; white-space: nowrap; }
+        th, td { border: 2px solid #333; padding: 2px; }
+        th { background-color: #fce5cd; padding: 6px; }
+        .bg-yellow { background-color: #ffff00; font-weight: bold; }
+        .bg-blue { background-color: #b9cce4; font-weight: bold; }
+        .bg-green { background-color: #d5e8d4; }
+        .bg-peach { background-color: #fce5cd; font-weight: bold; }
+        .bg-black { background-color: #222; height: 12px; padding: 0; border: none; }
+        .bold { font-weight: bold; }
+        .text-left { text-align: left; padding-left: 5px; }
+        .text-center { text-align: center; }
+        
+        input.cell-input { width: 35px; height: 25px; box-sizing: border-box; border: none; text-align: center; font-size: 12px; background-color: transparent; outline: none; font-weight: bold; color:#0056b3;}
+        input.cell-input-rev { width: 65px; color:#d9534f;}
+        input.cell-input:focus { background-color: #e8f4fd; box-shadow: inset 0 0 0 2px #007bff;}
+        input.cell-input:disabled { background-color: transparent; cursor: default; color: #333; font-weight: bold; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .alert { background-color: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-top: 15px; display: none; text-align: center; font-weight: bold; border: 1px solid #c3e6cb;}
+        
+        .btn-wa { background-color: #25D366; color: white; padding: 10px 15px; margin: 0;} 
+        .btn-wa:hover { background-color: #128C7E; }
+        .wa-section { display: none; margin-top: 15px; background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b8daff;}
+        textarea#textWA { width: 100%; height: 500px; font-family: monospace; padding: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; resize: vertical; background: white;}
+        .target-input-group { margin-bottom: 10px; display: flex; align-items: center; gap: 10px;}
+        
+        #wa-control-group { display: none; align-items: center; gap: 15px; margin-top: 20px; background: #e8f4fd; padding: 10px 15px; border-radius: 5px; border: 1px solid #b8daff;}
+        
+        .status-sync { font-size: 11px; padding: 4px 8px; border-radius: 20px; font-weight: bold; display: inline-block;}
+        .sync-online { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+        .sync-offline { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+        .sync-loading { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba;}
+        
+        .btn-back { position: absolute; top: 20px; left: 20px; background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold; }
+        .btn-back:hover { background: #5a6268; }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="btn-back">⬅ Kembali ke Menu Utama</a>
+
+    <h2>Sistem Rekap UE & Revenue Harian SA</h2>
+    <div class="subtitle">Database Firebase: <span id="sync-status" class="status-sync sync-loading">⏳ Menghubungkan ke Server...</span></div>
+
+    <div class="card">
+        <div class="header-controls">
+            <div class="filter-group">
+                <div>
+                    <label>Pilih Tampilan:</label>
+                    <select id="filter_sa" onchange="gantiModeTampilan()">
+                        <option value="ALL">📊 --- SUMMARY SEMUA SA ---</option>
+                        <option value="YOGA">👤 YOGA</option>
+                        <option value="SARIPUDIN">👤 SARIPUDIN</option>
+                        <option value="DODDY">👤 DODDY</option>
+                        <option value="I PUTU">👤 I PUTU</option>
+                        <option value="RIDUAN">👤 RIDUAN</option>
+                        <option value="SLAMET">👤 SLAMET</option>
+                        <option value="RONALDO">👤 RONALDO</option>
+                        <option value="IMRON">👤 IMRON</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Bulan:</label>
+                    <select id="filter_bulan" onchange="tarikDataDariFirebase()">
+                        <option value="08">Agustus</option>
+                        <option value="09">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Tahun:</label>
+                    <select id="filter_tahun" onchange="tarikDataDariFirebase()">
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <button type="button" class="btn-simpan" id="btnSimpan" onclick="simpanKeFirebase()">💾 Simpan Perubahan Online</button>
+            </div>
+        </div>
+
+        <table id="tabel-rekap">
+            <thead id="thead-grid"></thead>
+            <tbody id="tbody-grid"></tbody>
+        </table>
+        
+        <div id="pesanNotif" class="alert">✅ Data berhasil disimpan ke Server Firebase Online!</div>
+
+        <!-- BAGIAN LAPORAN WHATSAPP -->
+        <div id="wa-control-group">
+            <div>
+                <label>Tgl Laporan (Today):</label>
+                <input type="number" id="inputTglLaporan" min="1" max="31" style="width: 60px;" title="Pilih tanggal kolom yang ingin ditarik sebagai data Today">
+            </div>
+            <button type="button" class="btn-wa" onclick="generateLaporanWA()">📱 Buat Laporan WhatsApp</button>
+        </div>
+
+        <div id="wa-section" class="wa-section">
+            <h3 style="margin-top:0; color: #128C7E;">Template Laporan WhatsApp</h3>
+            
+            <div class="target-input-group">
+                <label>Target UE Bulan Ini:</label>
+                <input type="number" id="inputTargetUE" value="1325" oninput="updatePersentase()" style="width: 100px;">
+                <span style="font-size: 12px; color: #555;">(Ubah angka ini untuk update % otomatis)</span>
+            </div>
+            
+            <textarea id="textWA"></textarea>
+            
+            <button type="button" class="btn-simpan" style="margin-left: 0; margin-top: 10px;" onclick="salinLaporanWA()">📋 Salin Teks (Copy)</button>
+            <span id="copyNotif" style="display:none; color: #28a745; font-weight: bold; margin-left: 10px;">Teks berhasil disalin!</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 1. KONFIGURASI FIREBASE
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGsylncIZxoRmJ9YD_f4CNc7R83QbBMg4",
+            authDomain: "antrian-service-daya-toyota.firebaseapp.com",
+            databaseURL: "https://antrian-service-daya-toyota-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "antrian-service-daya-toyota",
+            storageBucket: "antrian-service-daya-toyota.firebasestorage.app",
+            messagingSenderId: "421850738338",
+            appId: "1:421850738338:web:21d5d24822e7902923b1fb"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        let isOnline = false;
+        db.ref(".info/connected").on("value", function(snap) {
+            const statusEl = document.getElementById("sync-status");
+            if (snap.val() === true) {
+                isOnline = true;
+                statusEl.className = "status-sync sync-online";
+                statusEl.innerText = "🟢 Terhubung (Online & Real-time)";
+            } else {
+                isOnline = false;
+                statusEl.className = "status-sync sync-offline";
+                statusEl.innerText = "🔴 Terputus (Offline)";
+            }
+        });
+
+        // ============================================================
+        // 2. STRUKTUR DATA
+        // ============================================================
+        const catUE = [
+            { type: "SBE", segmen: ["RETAIL", "FLEET", "TMS"] },
+            { type: "GR", segmen: ["RETAIL", "FLEET", "TMS"] },
+            { type: "GO", segmen: ["RETAIL", "FLEET", "TMS"] },
+            { type: "TWC", segmen: ["RETAIL", "FLEET", "TMS"] },
+            { type: "SBI", segmen: ["RETAIL", "FLEET", "TMS"] }
+        ];
+        const catRev = ["JASA", "OPL", "OPB", "PART"];
+        let dataLaporanSaatIni = {}; 
+        let currentFirebaseListener = null;
+
+        function formatRp(angka) {
+            if (!angka || angka === 0) return "Rp -";
+            return "Rp " + angka.toLocaleString('id-ID'); 
+        }
+
+        function formatJT(angka) {
+            if (!angka || angka === 0) return "0 JT";
+            return (angka / 1).toLocaleString('id-ID') + " JT";
+        }
+
+        // ============================================================
+        // 3. GENERATE TABEL HTML
+        // ============================================================
+        function buatTabelGrid(isSummary) {
+            const thead = document.getElementById('thead-grid');
+            const tbody = document.getElementById('tbody-grid');
+            let htmlHead = '';
+            let htmlBody = '';
+
+            htmlHead += `<tr>
+                <th style="background-color: transparent; border: none;"></th>
+                <th colspan="2">Order Type</th>`;
+            for (let i = 1; i <= 31; i++) { htmlHead += `<th>${i}</th>`; }
+            htmlHead += `<th>TOTAL</th></tr>`;
+            thead.innerHTML = htmlHead;
+
+            let isFirstUE = true;
+            catUE.forEach(kat => {
+                let isFirstType = true;
+                kat.segmen.forEach(seg => {
+                    htmlBody += `<tr>`;
+                    if (isFirstUE) {
+                        let rowspanCount = isSummary ? 20 : 15;
+                        htmlBody += `<td rowspan="${rowspanCount}" class="bg-yellow">UNIT ENTRY</td>`;
+                        isFirstUE = false;
+                    }
+                    if (isFirstType) {
+                        htmlBody += `<td rowspan="3" class="bg-blue">${kat.type}</td>`;
+                        isFirstType = false;
+                    }
+                    htmlBody += `<td class="text-left">${seg}</td>`;
+                    
+                    for (let i = 1; i <= 31; i++) {
+                        htmlBody += `<td><input type="number" class="cell-input" id="ue_${kat.type}_${seg}_${i}" oninput="hitungTotal()"></td>`;
+                    }
+                    htmlBody += `<td id="total_ue_${kat.type}_${seg}" class="bold">0</td></tr>`;
+                });
+
+                if (isSummary) {
+                    htmlBody += `<tr>
+                        <td colspan="2" class="bg-green">Total ${kat.type}</td>`;
+                    for (let i = 1; i <= 31; i++) {
+                        htmlBody += `<td id="subtotal_${kat.type}_${i}" class="bg-green">0</td>`;
+                    }
+                    htmlBody += `<td id="grand_subtotal_${kat.type}" class="bg-green bold">0</td></tr>`;
+                }
+            });
+
+            if (isSummary) {
+                htmlBody += `<tr>
+                    <td colspan="3" class="bg-green text-center bold" style="font-size: 14px;">TOTAL UE / SA</td>`;
+                for (let i = 1; i <= 31; i++) {
+                    htmlBody += `<td id="daily_total_ue_${i}" class="bg-green bold">0</td>`;
+                }
+                htmlBody += `<td id="grand_total_ue" class="bg-green bold">0</td></tr>`;
+            } else {
+                htmlBody += `<tr>
+                    <td colspan="34" class="bg-green text-center bold" style="font-size: 14px;">TOTAL UE / SA</td>
+                    <td id="grand_total_ue" class="bg-green bold">0</td></tr>`;
+            }
+
+            htmlBody += `<tr><td colspan="35" class="bg-black"></td></tr>`;
+
+            let isFirstRev = true;
+            catRev.forEach(rev => {
+                htmlBody += `<tr>`;
+                if (isFirstRev) {
+                    htmlBody += `<td rowspan="4" class="bg-peach">REVENUE</td>`;
+                    isFirstRev = false;
+                }
+                htmlBody += `<td colspan="2" class="text-left">${rev}</td>`;
+                
+                for (let i = 1; i <= 31; i++) {
+                    htmlBody += `<td><input type="number" class="cell-input cell-input-rev" id="rev_${rev}_${i}" oninput="hitungTotal()"></td>`;
+                }
+                htmlBody += `<td id="total_rev_${rev}" class="bold">Rp -</td></tr>`;
+            });
+
+            htmlBody += `<tr>
+                <td colspan="3" class="bold text-left" style="font-size: 14px;">TOTAL REVENUE</td>`;
+            for (let i = 1; i <= 31; i++) {
+                htmlBody += `<td id="daily_total_rev_${i}" class="bold">Rp -</td>`;
+            }
+            htmlBody += `<td id="grand_total_rev" class="bold">Rp -</td></tr>`;
+
+            tbody.innerHTML = htmlBody;
+        }
+
+        window.hitungTotal = function() {
+            const isSummary = document.getElementById('filter_sa').value === "ALL";
+            let grandTotalUE = 0;
+            let dailyTotalUE = new Array(32).fill(0);
+
+            catUE.forEach(kat => {
+                let subtotalTypeTotal = 0;
+                let dailySubtotalType = new Array(32).fill(0);
+
+                kat.segmen.forEach(seg => {
+                    let totalBaris = 0;
+                    for (let i = 1; i <= 31; i++) {
+                        let val = parseInt(document.getElementById(`ue_${kat.type}_${seg}_${i}`).value) || 0;
+                        totalBaris += val;
+                        dailySubtotalType[i] += val;
+                        dailyTotalUE[i] += val;
+                    }
+                    document.getElementById(`total_ue_${kat.type}_${seg}`).innerText = totalBaris > 0 ? totalBaris : '0';
+                    subtotalTypeTotal += totalBaris;
+                });
+
+                if (isSummary) {
+                    for (let i = 1; i <= 31; i++) {
+                        document.getElementById(`subtotal_${kat.type}_${i}`).innerText = dailySubtotalType[i];
+                    }
+                    document.getElementById(`grand_subtotal_${kat.type}`).innerText = subtotalTypeTotal;
+                }
+                grandTotalUE += subtotalTypeTotal;
+            });
+
+            if (isSummary) {
+                for (let i = 1; i <= 31; i++) {
+                    document.getElementById(`daily_total_ue_${i}`).innerText = dailyTotalUE[i];
+                }
+            }
+            document.getElementById('grand_total_ue').innerText = grandTotalUE;
+
+            let grandTotalRev = 0;
+            let dailyTotalRev = new Array(32).fill(0);
+
+            catRev.forEach(rev => {
+                let totalBarisRev = 0;
+                for (let i = 1; i <= 31; i++) {
+                    let val = parseInt(document.getElementById(`rev_${rev}_${i}`).value) || 0;
+                    totalBarisRev += val;
+                    dailyTotalRev[i] += val;
+                }
+                document.getElementById(`total_rev_${rev}`).innerText = formatRp(totalBarisRev);
+                grandTotalRev += totalBarisRev;
+            });
+
+            for (let i = 1; i <= 31; i++) {
+                document.getElementById(`daily_total_rev_${i}`).innerText = formatRp(dailyTotalRev[i]);
+            }
+            document.getElementById('grand_total_rev').innerText = formatRp(grandTotalRev);
+        };
+
+        // ============================================================
+        // 4. FIREBASE: LOAD & LISTEN DATA REAL-TIME
+        // ============================================================
+        function gantiModeTampilan() {
+            const sa = document.getElementById('filter_sa').value;
+            const isSummary = (sa === "ALL");
+            buatTabelGrid(isSummary);
+            
+            document.getElementById('wa-section').style.display = 'none';
+            const btnSimpan = document.getElementById('btnSimpan');
+            const waControlGroup = document.getElementById('wa-control-group');
+
+            if (isSummary) {
+                btnSimpan.disabled = true;
+                btnSimpan.innerText = "Mode Summary (Hanya Baca)";
+                waControlGroup.style.display = 'flex'; 
+                document.querySelectorAll('.cell-input').forEach(input => { input.disabled = true; });
+            } else {
+                btnSimpan.disabled = false;
+                btnSimpan.innerText = "💾 Simpan Perubahan Online";
+                waControlGroup.style.display = 'none'; 
+            }
+            
+            tarikDataDariFirebase();
+        }
+
+        function tarikDataDariFirebase() {
+            if (currentFirebaseListener) {
+                db.ref('rekap_harian').off('value', currentFirebaseListener);
+            }
+
+            document.querySelectorAll('.cell-input').forEach(input => {
+                input.value = '';
+                if(document.getElementById('filter_sa').value === "ALL") {
+                    input.disabled = true; 
+                } else {
+                    input.disabled = false;
+                }
+            });
+            window.hitungTotal(); 
+
+            const sa = document.getElementById('filter_sa').value;
+            const bulan = document.getElementById('filter_bulan').value;
+            const tahun = document.getElementById('filter_tahun').value;
+            
+            currentFirebaseListener = db.ref('rekap_harian').on('value', (snapshot) => {
+                const dataFirebase = snapshot.val() || {};
+                
+                if (sa === "ALL") {
+                    let dataGabungan = { ue: {}, rev: {} };
+                    const cariSuffix = `_${tahun}_${bulan}`;
+
+                    for (let key in dataFirebase) {
+                        if (key.endsWith(cariSuffix)) {
+                            let dataSA = dataFirebase[key];
+                            
+                            if (dataSA.ue) {
+                                catUE.forEach(kat => {
+                                    kat.segmen.forEach(seg => {
+                                        const k = `${kat.type}_${seg}`;
+                                        if (!dataGabungan.ue[k]) dataGabungan.ue[k] = {};
+                                        if (dataSA.ue[k]) {
+                                            for (let i = 1; i <= 31; i++) {
+                                                if (dataSA.ue[k][i]) {
+                                                    dataGabungan.ue[k][i] = (dataGabungan.ue[k][i] || 0) + dataSA.ue[k][i];
+                                                }
+                                            }
+                                        }
+                                    });
+                                });
+                            }
+                            
+                            if (dataSA.rev) {
+                                catRev.forEach(rev => {
+                                    if (!dataGabungan.rev[rev]) dataGabungan.rev[rev] = {};
+                                    if (dataSA.rev[rev]) {
+                                        for (let i = 1; i <= 31; i++) {
+                                            if (dataSA.rev[rev][i]) {
+                                                dataGabungan.rev[rev][i] = (dataGabungan.rev[rev][i] || 0) + dataSA.rev[rev][i];
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    isiTabelDariData(dataGabungan);
+                    document.querySelectorAll('.cell-input').forEach(input => {
+                        if (input.value === "0") input.value = "";
+                    });
+
+                } else {
+                    const docId = `${sa}_${tahun}_${bulan}`;
+                    const dataSA = dataFirebase[docId] || {};
+                    isiTabelDariData(dataSA);
+                }
+            });
+        }
+
+        function isiTabelDariData(data) {
+            document.querySelectorAll('.cell-input').forEach(input => input.value = '');
+            
+            if (data.ue) {
+                catUE.forEach(kat => {
+                    kat.segmen.forEach(seg => {
+                        const key = `${kat.type}_${seg}`;
+                        if (data.ue[key]) {
+                            for (let i = 1; i <= 31; i++) {
+                                if (data.ue[key][i]) document.getElementById(`ue_${key}_${i}`).value = data.ue[key][i];
+                            }
+                        }
+                    });
+                });
+            }
+            if (data.rev) {
+                catRev.forEach(rev => {
+                    if (data.rev[rev]) {
+                        for (let i = 1; i <= 31; i++) {
+                            if (data.rev[rev][i]) document.getElementById(`rev_${rev}_${i}`).value = data.rev[rev][i];
+                        }
+                    }
+                });
+            }
+            window.hitungTotal(); 
+        }
+
+        // ============================================================
+        // 5. FIREBASE: SIMPAN DATA
+        // ============================================================
+        function simpanKeFirebase() {
+            const sa = document.getElementById('filter_sa').value;
+            if (sa === "ALL") return; 
+
+            if (!isOnline) {
+                alert("⚠️ Sistem sedang Offline. Pastikan internet Anda terhubung sebelum menyimpan!");
+                return;
+            }
+
+            const btn = document.getElementById('btnSimpan');
+            btn.innerText = "⏳ Menyimpan ke Server..."; 
+            btn.disabled = true;
+
+            const bulan = document.getElementById('filter_bulan').value;
+            const tahun = document.getElementById('filter_tahun').value;
+            const docId = `${sa}_${tahun}_${bulan}`;
+
+            let dataSimpan = { 
+                nama_sa: sa, 
+                bulan: bulan, 
+                tahun: tahun, 
+                terakhir_diupdate: firebase.database.ServerValue.TIMESTAMP,
+                ue: {}, 
+                rev: {} 
+            };
+
+            catUE.forEach(kat => {
+                kat.segmen.forEach(seg => {
+                    const key = `${kat.type}_${seg}`;
+                    dataSimpan.ue[key] = {};
+                    for (let i = 1; i <= 31; i++) {
+                        let val = parseInt(document.getElementById(`ue_${key}_${i}`).value);
+                        if (val > 0) dataSimpan.ue[key][i] = val;
+                    }
+                });
+            });
+
+            catRev.forEach(rev => {
+                dataSimpan.rev[rev] = {};
+                for (let i = 1; i <= 31; i++) {
+                    let val = parseInt(document.getElementById(`rev_${rev}_${i}`).value);
+                    if (val > 0) dataSimpan.rev[rev][i] = val;
+                }
+            });
+
+            db.ref('rekap_harian/' + docId).set(dataSimpan).then(() => {
+                const pesan = document.getElementById('pesanNotif');
+                pesan.style.display = 'block';
+                setTimeout(() => { pesan.style.display = 'none'; }, 3000);
+            }).catch((err) => {
+                alert("❌ Gagal menyimpan ke server: " + err.message);
+            }).finally(() => {
+                btn.innerText = "💾 Simpan Perubahan Online"; 
+                btn.disabled = false;
+            });
+        }
+
+        // ============================================================
+        // 6. GENERATE LAPORAN WHATSAPP 
+        // ============================================================
+        window.generateLaporanWA = function() {
+            const tglHariIni = parseInt(document.getElementById('inputTglLaporan').value) || new Date().getDate();
+
+            let uesToday = { SBE: 0, SBI: 0, GR: 0, TWC: 0, GO: 0, TOTAL: 0 };
+            let uesMTD = { SBE: 0, SBI: 0, GR: 0, TWC: 0, GO: 0, TOTAL: 0 };
+            
+            let revsToday = { JASA: 0, PART: 0, OPB: 0, OPL: 0, TOTAL: 0 }; 
+            let revsMTD = { JASA: 0, PART: 0, OPB: 0, OPL: 0, TOTAL: 0 };
+
+            catUE.forEach(kat => {
+                kat.segmen.forEach(seg => {
+                    for (let i = 1; i <= 31; i++) {
+                        let val = parseInt(document.getElementById(`ue_${kat.type}_${seg}_${i}`).value) || 0;
+                        if (i === tglHariIni) {
+                            uesToday[kat.type] += val;
+                            uesToday.TOTAL += val;
+                        }
+                        uesMTD[kat.type] += val;
+                        uesMTD.TOTAL += val;
+                    }
+                });
+            });
+
+            catRev.forEach(rev => {
+                for (let i = 1; i <= 31; i++) {
+                    let val = parseInt(document.getElementById(`rev_${rev}_${i}`).value) || 0;
+                    if (i === tglHariIni) {
+                        revsToday[rev] += val;
+                        revsToday.TOTAL += val;
+                    }
+                    revsMTD[rev] += val;
+                    revsMTD.TOTAL += val;
+                }
+            });
+
+            // DTMS BACA DARI FIREBASE ONLINE
+            let dtmsToday = 0;
+            let dtmsMTD = 0;
+            const bulan = document.getElementById('filter_bulan').value;
+            const tahun = document.getElementById('filter_tahun').value;
+            const cariSuffix = `_${tahun}_${bulan}`;
+            
+            db.ref('rekap_harian').once('value').then((snapshot) => {
+                const dataFirebase = snapshot.val() || {};
+                
+                ['RONALDO', 'IMRON'].forEach(saName => {
+                    let dataSA = dataFirebase[`${saName}${cariSuffix}`];
+                    if (dataSA && dataSA.ue) {
+                        for (let k in dataSA.ue) {
+                            for (let i = 1; i <= 31; i++) {
+                                let val = dataSA.ue[k][i] || 0;
+                                if (i === tglHariIni) dtmsToday += val;
+                                dtmsMTD += val;
+                            }
+                        }
+                    }
+                });
+
+                let cpusToday = uesToday.SBE + uesToday.GR;
+                let cpusMTD = uesMTD.SBE + uesMTD.GR;
+
+                const bulanSelect = document.getElementById('filter_bulan');
+                const namaBulan = bulanSelect.options[bulanSelect.selectedIndex].text.toUpperCase();
+                const bln = namaBulan.substring(0, 3);
+                
+                let idxBln = bulanSelect.selectedIndex;
+                let txtBlnLalu = "[BLN_LALU]";
+                if(idxBln > 0) {
+                    txtBlnLalu = bulanSelect.options[idxBln - 1].text.toUpperCase().substring(0, 3);
+                }
+
+                dataLaporanSaatIni = {
+                    tglHariIni, bln, txtBlnLalu, uesToday, uesMTD, dtmsToday, dtmsMTD, cpusToday, cpusMTD, revsToday, revsMTD
+                };
+
+                buatTeksLaporanWA();
+                document.getElementById('wa-section').style.display = 'block';
+                document.getElementById('wa-section').scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+
+        function buatTeksLaporanWA() {
+            const { tglHariIni, bln, txtBlnLalu, uesToday, uesMTD, dtmsToday, dtmsMTD, cpusToday, cpusMTD, revsToday, revsMTD } = dataLaporanSaatIni;
+            
+            const targetUE = document.getElementById('inputTargetUE').value || 1;
+            let persenAch = uesMTD.TOTAL > 0 ? ((uesMTD.TOTAL / targetUE) * 100).toFixed(1) : 0;
+
+            const templateText = `Laporan Harian Service
+${tglHariIni} ${bln} / MTD ${bln} / MTD ${txtBlnLalu}
+
+UE ${uesToday.TOTAL} / ${uesMTD.TOTAL}
+SBE ${uesToday.SBE} / ${uesMTD.SBE}
+SBI ${uesToday.SBI} / ${uesMTD.SBI}
+GR ${uesToday.GR} / ${uesMTD.GR}
+TWC ${uesToday.TWC} / ${uesMTD.TWC}
+RTJ 0 / 0
+CPUS ${cpusToday} / ${cpusMTD}
+DTMS ${dtmsToday} / ${dtmsMTD}
+
+Revenue :
+JASA ${formatJT(revsToday.JASA)} / ${formatJT(revsMTD.JASA)}
+PART ${formatJT(revsToday.PART)} / ${formatJT(revsMTD.PART)}
+BAHAN ${formatJT(revsToday.OPB)} / ${formatJT(revsMTD.OPB)}
+OPL ${formatJT(revsToday.OPL)} / ${formatJT(revsMTD.OPL)}
+TOTAL ${formatJT(revsToday.TOTAL)} / ${formatJT(revsMTD.TOTAL)}
+
+Ach MTD UE :  ${uesMTD.TOTAL} / ${parseFloat(targetUE).toLocaleString('id-ID')} (${persenAch}%)
+Ach YTD UE : 8.331 / 10.849 (87,4%)
+
+Fleet UE PKS
+Ach MTD UE PKS : 0 / 110 (0%)
+
+Target
+UE.        : ${parseFloat(targetUE).toLocaleString('id-ID')}
+CPUS    : 959
+Rev.       : 2.616 M`;
+
+            document.getElementById('textWA').value = templateText;
+        }
+
+        window.updatePersentase = function() {
+            if(document.getElementById('wa-section').style.display === 'block') {
+                buatTeksLaporanWA();
+            }
+        };
+
+        window.salinLaporanWA = function() {
+            const textLaporan = document.getElementById('textWA');
+            textLaporan.select();
+            textLaporan.setSelectionRange(0, 99999); 
+            
+            navigator.clipboard.writeText(textLaporan.value).then(() => {
+                const notif = document.getElementById('copyNotif');
+                notif.style.display = 'inline';
+                setTimeout(() => { notif.style.display = 'none'; }, 2000);
+            }).catch(err => {
+                alert("Gagal menyalin teks, silakan copy manual.");
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const currentMonth = new Date().getMonth() + 1;
+            const fmtBulan = currentMonth < 10 ? `0${currentMonth}` : `${currentMonth}`;
+            if (document.querySelector(`#filter_bulan option[value="${fmtBulan}"]`)) {
+                document.getElementById('filter_bulan').value = fmtBulan;
+            }
+            document.getElementById('filter_sa').value = "YOGA"; 
+            document.getElementById('inputTglLaporan').value = new Date().getDate();
+            
+            gantiModeTampilan();
+        });
+    </script>
+</body>
+</html>
