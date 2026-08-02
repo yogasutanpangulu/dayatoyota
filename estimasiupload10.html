@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <title>&nbsp;</title>
     
+    <!-- Library Tesseract.js (AI OCR) untuk Upload Gambar Kolom Part -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Menggunakan konfigurasi server database yang sama dengan index.html utama
         const firebaseConfig = {
             apiKey: "AIzaSyBHLuzqXq_T6BGACGbDdheC7w8ZEQcsqCM",
             authDomain: "penerimaan-service.firebaseapp.com",
@@ -22,7 +24,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
-        // Diekspos ke window object agar fungsi simpan cloud internal dapat membaca langsung
         window.db = db; window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbUpdate = update; window.dbRemove = remove;
     </script>
 
@@ -191,6 +192,8 @@
         .btn:hover { background: #eee; }
         .btn-add { color: green; border-color: green; }
         .btn-add:hover { background: #e8f5e9; }
+        .btn-ocr { color: #fff; background: #673ab7; border-color: #512da8; margin-left: 10px; }
+        .btn-ocr:hover { background: #512da8; }
         
         .btn-remove {
             color: #f44336;
@@ -267,6 +270,7 @@
         }
         .btn-load { color: #2196F3; border-color: #2196F3; background: transparent; }
         .btn-delete { color: #f44336; border-color: #f44336; background: transparent; }
+        .btn-edit { color: #ff9800; border-color: #ff9800; background: transparent; }
 
         /* Form Master Data & Import */
         .master-form {
@@ -330,12 +334,34 @@
             padding: 6px 10px !important;
         }
 
+        /* CSS UNTUK MODAL OCR CROPPER */
+        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items:center; justify-content:center; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 8px; max-width: 95%; max-height: 95vh; display:flex; flex-direction: column; width: 900px;}
+        .modal-header { font-size: 14pt; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .ocr-toolbar { display: flex; gap: 15px; margin-bottom: 15px; justify-content: center; flex-wrap: wrap; }
+        .ocr-tool-btn { padding: 10px 15px; border: 2px solid #ddd; background: #fafafa; cursor: pointer; border-radius:6px; font-weight: bold; font-size: 10pt; transition: 0.2s; }
+        
+        .btn-mode-no.active-mode { border-color: #f44336; background: #ffebee; color: #d32f2f; }
+        .btn-mode-name.active-mode { border-color: #4caf50; background: #e8f5e9; color: #2e7d32; }
+        .btn-mode-price.active-mode { border-color: #2196F3; background: #e3f2fd; color: #1565c0; }
+
+        .image-wrapper { overflow: auto; max-height: 55vh; border: 1px solid #ccc; background: #e0e0e0; text-align: center; position: relative;}
+        #cropContainer { display: inline-block; position: relative; cursor: crosshair; user-select: none; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+        #ocrImage { display: block; max-width: 100%; height: auto; pointer-events: none; }
+        
+        .crop-box { position: absolute; border: 2px dashed #000; pointer-events: none; display: none; box-sizing: border-box; }
+        #box-partNo { border-color: #f44336; background: rgba(244, 67, 54, 0.25); }
+        #box-partName { border-color: #4caf50; background: rgba(76, 175, 80, 0.25); }
+        #box-price { border-color: #2196F3; background: rgba(33, 150, 243, 0.25); }
+
+        .modal-footer { margin-top: 15px; display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 15px;}
+
         /* Toast Notification & Blok Kompilasi Kode */
         .toast-container {
             position: fixed;
             top: 20px;
             right: 20px;
-            z-index: 9999;
+            z-index: 10001;
         }
         .toast-msg {
             background: #333333;
@@ -354,6 +380,9 @@
             opacity: 1;
             transform: translateY(0);
         }
+        .toast-info { background: #0b7dda; }
+        .toast-loading { background: #ff9800; }
+
         .code-compilation-box {
             margin-top: 15px;
             padding: 12px;
@@ -370,6 +399,7 @@
             font-size: 10pt;
             font-weight: bold;
             color: #33691e;
+            white-space: pre-line;
             word-break: break-all;
         }
         
@@ -408,7 +438,6 @@
             .action-panel, .storage-panel, .master-panel, .btn, .btn-remove, .btn-copy, .scroll-top-btn { display: none !important; }
             input[type="text"], input[type="number"], select { border-bottom: none !important; }
             
-            /* Mengubah judul saat di-print */
             .header-title-screen { display: none !important; }
             .header-title-print { 
                 display: block !important; 
@@ -424,6 +453,75 @@
 <body>
 
 <div id="toast-container" class="toast-container"></div>
+<input type="file" id="imageUpload" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+
+<!-- MODAL EDIT MASTER DATA -->
+<div class="modal-overlay" id="editMasterModal">
+    <div class="modal-content" style="width: 450px;">
+        <div class="modal-header">Menu Edit Master Data</div>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; margin: 10px 0;">
+            <input type="hidden" id="edit-id">
+            <div style="display: flex; align-items: center;">
+                <label style="width: 130px; font-weight: bold; font-size: 9.5pt;">Kategori</label>
+                <select id="edit-category" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="jasa">JASA</option>
+                    <option value="opl">OPL</option>
+                    <option value="part">PART / BAHAN</option>
+                </select>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <label style="width: 130px; font-weight: bold; font-size: 9.5pt;">Nama Deskripsi</label>
+                <input type="text" id="edit-name" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; border-bottom: 1px solid #ccc;">
+            </div>
+            <div style="display: flex; align-items: center;">
+                <label style="width: 130px; font-weight: bold; font-size: 9.5pt;">Code Part</label>
+                <input type="text" id="edit-code" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; border-bottom: 1px solid #ccc;">
+            </div>
+            <div style="display: flex; align-items: center;">
+                <label style="width: 130px; font-weight: bold; font-size: 9.5pt;">Harga Master</label>
+                <input type="number" id="edit-price" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; border-bottom: 1px solid #ccc;">
+            </div>
+        </div>
+
+        <div class="modal-footer" style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn-action" style="background: #9e9e9e; color: #fff; border:none; padding: 6px 15px; border-radius: 4px;" onclick="closeEditModal()">Batal</button>
+            <button class="btn-action" style="background: #4caf50; color: #fff; border:none; padding: 6px 15px; border-radius: 4px; font-weight: bold;" onclick="saveEditedMasterData()">Simpan Perubahan</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CROPPER UNTUK OCR GAMBAR -->
+<div class="modal-overlay" id="ocrModal">
+    <div class="modal-content">
+        <div class="modal-header">Pilih Area Kolom Untuk Diekstrak</div>
+        
+        <div style="text-align: center; font-size: 9.5pt; color: #555; margin-bottom: 10px;">
+            <b>Cara Penggunaan:</b> Klik tombol mode di bawah, lalu klik dan seret (drag) mouse pada gambar untuk menandai area kolom.
+        </div>
+
+        <div class="ocr-toolbar">
+            <button class="ocr-tool-btn btn-mode-no" onclick="setOcrMode('partNo', this)">1. Kotakkan NO PART</button>
+            <button class="ocr-tool-btn btn-mode-name" onclick="setOcrMode('partName', this)">2. Kotakkan NAMA PART</button>
+            <button class="ocr-tool-btn btn-mode-price" onclick="setOcrMode('price', this)">3. Kotakkan HARGA</button>
+            <button class="btn" style="background:#f44336; color:#fff; border:none; padding:10px;" onclick="resetCropBoxes()">🔄 Ulangi Kotak</button>
+        </div>
+
+        <div class="image-wrapper" id="imageWrapper">
+            <div id="cropContainer">
+                <img id="ocrImage" src="">
+                <div id="box-partNo" class="crop-box"></div>
+                <div id="box-partName" class="crop-box"></div>
+                <div id="box-price" class="crop-box"></div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-action" style="background: #9e9e9e; color: #fff; border:none;" onclick="closeOcrModal()">Batal</button>
+            <button class="btn-action" style="background: #4caf50; color: #fff; border:none; font-weight: bold;" onclick="executeOcrExtraction()">Mulai Ekstrak Data!</button>
+        </div>
+    </div>
+</div>
 
 <button id="btnScrollTop" class="scroll-top-btn" onclick="scrollToTop()" title="Kembali ke Atas">▲</button>
 
@@ -497,17 +595,16 @@
         </tbody>
     </table>
 
-        <div class="table-title">
+    <div class="table-title">
         <span></span>
         <button class="btn btn-add" onclick="addRow('table-lain')">+ Tambah Kolom</button>
     </div>
     <table id="table-lain">
         <thead>
             <tr>
-
                 <th style="width: 8%;" class="text-center">QTY</th>
                 <th style="width: 22%;">HARGA / PCS</th>
-                <th style="width: 32%;">&nbsp;</th> <!-- Menjadi Kosong -->
+                <th style="width: 32%;">&nbsp;</th>
                 <th style="width: 16%; color: #d32f2f;">DISCOUNT</th>
                 <th style="width: 17%;">TOTAL</th>
                 <th style="width: 5%;" class="text-center">Aksi</th>
@@ -518,7 +615,10 @@
 
     <div class="table-title">
         <span>KOLOM PART / BAHAN</span>
-        <button class="btn btn-add" onclick="addRow('table-part')">+ Tambah Part</button>
+        <div>
+            <button class="btn btn-add" onclick="addRow('table-part')">+ Tambah Part</button>
+            <button class="btn btn-ocr" onclick="document.getElementById('imageUpload').click()">📷 Upload Gambar (OCR)</button>
+        </div>
     </div>
     <table id="table-part">
         <thead>
@@ -544,9 +644,12 @@
                     </div>
                 </td>
                 <td>
-                    <div class="input-with-copy">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" data-type="part" placeholder="Pilih langsung dari Master Data di bawah..." oninput="calculateAll()">
+                    <div style="display: flex; flex-direction: column; gap: 2px; width: 100%;">
+                        <div class="input-with-copy">
+                            <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                            <input type="text" class="item-name" data-type="part" placeholder="Nama Part..." oninput="calculateAll()" style="font-weight: bold;">
+                        </div>
+                        <input type="text" class="item-part-no" placeholder="Part No..." style="font-size: 8.5pt; color: #555; width: 100%; border: none; border-bottom: 1px dotted #ccc; background: transparent; padding: 2px;">
                     </div>
                 </td>
                 <td>
@@ -592,14 +695,14 @@
                     </td>
                 </tr>
                 <tr>
-    <td class="grand-total-label">TOTAL SETELAH DISKON</td>
-    <td class="grand-total-value double-underline">
-        <div class="currency-box">
-            <button class="btn-copy" onclick="copyFinalTotal()" title="Salin Total Setelah Diskon">📋</button>
-            <span>Rp</span><span id="final-total">0</span>
-        </div>
-    </td>
-</tr>
+                    <td class="grand-total-label">TOTAL SETELAH DISKON</td>
+                    <td class="grand-total-value double-underline">
+                        <div class="currency-box">
+                            <button class="btn-copy" onclick="copyFinalTotal()" title="Salin Total Setelah Diskon">📋</button>
+                            <span>Rp</span><span id="final-total">0</span>
+                        </div>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -687,7 +790,6 @@
 
     function saveMasterDBToCloud(data) {
         if (window.db && window.dbRef && window.dbSet) {
-            // Ubah array menjadi object agar lebih stabil di Firebase
             const dataToSave = {};
             data.forEach((item, index) => { dataToSave[item.id || index] = item; });
             
@@ -708,11 +810,8 @@
                 const data = snapshot.val();
                 let validData = [];
                 if (data) {
-                    // Ekstrak data dari format Array atau Object Firebase
                     const rawArray = Array.isArray(data) ? data : Object.values(data);
-                    // Saring agar hanya item valid yang dimasukkan
                     validData = rawArray.filter(item => item !== null && typeof item === 'object' && item.name);
-                    
                     localStorage.setItem('bengkel_master_db', JSON.stringify(validData));
                 } else {
                     validData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
@@ -731,10 +830,12 @@
     }
     syncMasterDatabase();
 
-    function showToast(message) {
+    function showToast(message, type = "normal") {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = 'toast-msg';
+        if(type === "info") toast.classList.add('toast-info');
+        if(type === "loading") toast.classList.add('toast-loading');
         toast.innerText = message;
         container.appendChild(toast);
         
@@ -743,7 +844,7 @@
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
-        }, 2000);
+        }, type === "loading" ? 6000 : 2000);
     }
 
     window.onscroll = function() {
@@ -759,7 +860,6 @@
         document.getElementById('top-anchor').scrollIntoView({ behavior: 'smooth' });
     }
 
-        // --- FITUR SPREADSHEET KANVAS BERSAMA ---
     function syncLiveDraft() {
         if (!window.db || !window.dbRef || !window.dbSet) return;
         
@@ -783,10 +883,11 @@
             });
         });
         document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
+            const partNoInput = row.querySelector('.item-part-no');
             estimationData.part.push({
                 qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value,
-                discType: row.querySelector('.disc-type-select').value
+                name: row.querySelector('.item-name').value, partNo: partNoInput ? partNoInput.value : '',
+                disc: row.querySelector('.disc-input').value, discType: row.querySelector('.disc-type-select').value
             });
         });
 
@@ -801,23 +902,18 @@
                 const est = snapshot.val();
                 if (est) {
                     const isTyping = document.activeElement.tagName;
-                    // Tahan update layar jika ada kolom yang sedang aktif diketik agar kursor tidak hilang
                     if (isTyping === "INPUT" || isTyping === "SELECT") return; 
-                    
                     injectDataToFormElements(est);
                 }
             });
         }
     }
-    // --- BATAS FITUR SPREADSHEET ---
 
-            function calculateAll() {
+    function calculateAll() {
         let subtotalJasa = 0;
         let discTotalJasa = 0;
-        
         let subtotalLain = 0;
         let discTotalLain = 0;
-        
         let subtotalPart = 0;
         let discTotalPart = 0;
 
@@ -828,12 +924,7 @@
             
             const discValue = parseFloat(row.querySelector('.disc-input').value) || 0;
             const discType = row.querySelector('.disc-type-select').value;
-            let rowDiscount = 0;
-            if (discType === 'Rp') {
-                rowDiscount = discValue;
-            } else {
-                rowDiscount = (discValue / 100) * grossTotal;
-            }
+            let rowDiscount = discType === 'Rp' ? discValue : (discValue / 100) * grossTotal;
             
             const netTotal = Math.max(0, grossTotal - rowDiscount);
             row.querySelector('.row-total-val').innerText = netTotal.toLocaleString('id-ID');
@@ -850,12 +941,7 @@
             
             const discValue = parseFloat(row.querySelector('.disc-input').value) || 0;
             const discType = row.querySelector('.disc-type-select').value;
-            let rowDiscount = 0;
-            if (discType === 'Rp') {
-                rowDiscount = discValue;
-            } else {
-                rowDiscount = (discValue / 100) * grossTotal;
-            }
+            let rowDiscount = discType === 'Rp' ? discValue : (discValue / 100) * grossTotal;
             
             const netTotal = Math.max(0, grossTotal - rowDiscount);
             row.querySelector('.row-total-val').innerText = netTotal.toLocaleString('id-ID');
@@ -876,12 +962,7 @@
             
             const discValue = parseFloat(row.querySelector('.disc-input').value) || 0;
             const discType = row.querySelector('.disc-type-select').value;
-            let rowDiscount = 0;
-            if (discType === 'Rp') {
-                rowDiscount = discValue;
-            } else {
-                rowDiscount = (discValue / 100) * grossTotal;
-            }
+            let rowDiscount = discType === 'Rp' ? discValue : (discValue / 100) * grossTotal;
             
             const netTotal = Math.max(0, grossTotal - rowDiscount);
             row.querySelector('.row-total-val').innerText = netTotal.toLocaleString('id-ID');
@@ -902,15 +983,12 @@
 
         compilePartCodes();
 
-        // --- TAMBAHAN AUTO-SAVE ALA SPREADSHEET ---
         clearTimeout(window.autoSaveTimer);
         window.autoSaveTimer = setTimeout(() => {
-            // Langsung kirim semua ketikan ke Kanvas Bersama tanpa butuh pengecekan Nopol
             if (typeof syncLiveDraft === "function") {
                 syncLiveDraft(); 
             }
         }, 1500);
-        // --- BATAS TAMBAHAN ---
     }
 
     function copyValue(button) {
@@ -947,12 +1025,20 @@
         const newRow = document.createElement('tr');
         let inputTdHtml = '';
         
-        if (type === 'part' || type === 'jasa') {
-            const placeholderText = type === 'jasa' ? 'Pilih langsung dari Master Data JASA di bawah...' : 'Pilih langsung dari Master Data di bawah...';
+        if (type === 'jasa') {
             inputTdHtml = `
                 <div class="input-with-copy">
                     <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <input type="text" class="item-name" data-type="${type}" placeholder="${placeholderText}" oninput="calculateAll()">
+                    <input type="text" class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()">
+                </div>`;
+        } else if (type === 'part') {
+            inputTdHtml = `
+                <div style="display: flex; flex-direction: column; gap: 2px; width: 100%;">
+                    <div class="input-with-copy">
+                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
+                        <input type="text" class="item-name" data-type="part" placeholder="Nama Part..." oninput="calculateAll()" style="font-weight: bold;">
+                    </div>
+                    <input type="text" class="item-part-no" placeholder="Part No..." style="font-size: 8.5pt; color: #555; width: 100%; border: none; border-bottom: 1px dotted #ccc; background: transparent; padding: 2px;">
                 </div>`;
         } else {
             inputTdHtml = `
@@ -1006,7 +1092,6 @@
     function autoFillPrice(selectElement) {
         const selectedOption = selectElement.options[selectElement.selectedIndex];
         const price = selectedOption.getAttribute('data-price') || 0;
-        
         const row = selectElement.closest('tr');
         const priceInput = row.querySelector('.price-input');
         
@@ -1056,6 +1141,14 @@
 
         targetRow.querySelector('.item-name').value = name;
         targetRow.querySelector('.price-input').value = price;
+        
+        if (type === 'part') {
+            const matchedItem = masterDatabase.find(item => item.name === name && item.type === 'part');
+            const partNoInput = targetRow.querySelector('.item-part-no');
+            if (partNoInput && matchedItem && matchedItem.code) {
+                partNoInput.value = matchedItem.code;
+            }
+        }
 
         targetRow.style.backgroundColor = "#e8f5e9";
         setTimeout(() => targetRow.style.backgroundColor = "transparent", 800);
@@ -1192,6 +1285,65 @@
         showToast("✅ Item Master Data Berhasil Ditambahkan!");
     }
 
+    function editMasterData(id, event) {
+        if (event) event.stopPropagation();
+        if (String(id).startsWith('L0')) { alert('Item bawaan ini dikunci sistem dan tidak boleh diedit!'); return; }
+
+        let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
+        let currentItem = savedData.find(item => String(item.id) === String(id));
+        if (!currentItem) return;
+
+        // Masukkan data lama ke dalam elemen form modal
+        document.getElementById('edit-id').value = currentItem.id;
+        document.getElementById('edit-category').value = currentItem.type;
+        document.getElementById('edit-name').value = currentItem.name;
+        document.getElementById('edit-code').value = currentItem.code || '';
+        document.getElementById('edit-price').value = currentItem.price || 0;
+
+        // Munculkan modal edit
+        document.getElementById('editMasterModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editMasterModal').style.display = 'none';
+    }
+
+    function saveEditedMasterData() {
+        const id = document.getElementById('edit-id').value;
+        const newCategory = document.getElementById('edit-category').value;
+        const newName = document.getElementById('edit-name').value.trim();
+        const newCode = document.getElementById('edit-code').value.trim();
+        const newPrice = parseFloat(document.getElementById('edit-price').value) || 0;
+
+        if (!newName) {
+            alert("Nama deskripsi tidak boleh kosong!");
+            return;
+        }
+
+        let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
+        let itemIndex = savedData.findIndex(item => String(item.id) === String(id));
+        
+        if (itemIndex !== -1) {
+            savedData[itemIndex] = {
+                id: savedData[itemIndex].id,
+                type: newCategory,
+                name: newName,
+                price: newPrice,
+                code: newCode
+            };
+
+            localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
+            saveMasterDBToCloud(savedData);
+            
+            syncMasterDatabase();
+            renderMasterTable();
+            updateAllDropdowns();
+            initDefaultLainTable();
+            closeEditModal();
+            showToast("✏️ Master Data Berhasil Diperbarui!");
+        }
+    }
+
     function deleteMasterData(id, event) {
         if (event) event.stopPropagation();
         if (String(id).startsWith('L0')) { alert('Item bawaan ini dikunci sistem dan tidak boleh dihapus!'); return; }
@@ -1247,7 +1399,8 @@
                     </td>
                     <td><span style="font-family:monospace; font-weight:bold; color:#555;">${codeDisplay}</span></td>
                     <td>${item.price === 0 ? 'Rp 0' : 'Rp ' + item.price.toLocaleString('id-ID')}</td>
-                    <td class="text-center">
+                    <td class="text-center" style="white-space: nowrap;">
+                        <button class="btn btn-edit" style="padding:2px 6px; margin-right: 4px; ${isLocked ? 'opacity:0.4; cursor:not-allowed;' : ''}" onclick="editMasterData('${item.id}', event)">Edit</button>
                         <button class="btn btn-delete" style="padding:2px 6px; ${isLocked ? 'opacity:0.4; cursor:not-allowed;' : ''}" onclick="deleteMasterData('${item.id}', event)">Hapus</button>
                     </td>
                 `;
@@ -1362,9 +1515,12 @@
             }
         });
 
+        const finalTotalText = document.getElementById('final-total').innerText;
         const outputSpan = document.getElementById('compiled-part-codes');
+
         if (compiledResult !== "") {
-            outputSpan.innerText = compiledResult.substring(0, compiledResult.length - 3);
+            let cleanParts = compiledResult.substring(0, compiledResult.length - 3);
+            outputSpan.innerText = cleanParts + "\n\nESTIMASI : Rp." + finalTotalText;
         } else {
             outputSpan.innerText = "- Belum ada part dipilih -";
         }
@@ -1381,7 +1537,7 @@
         });
     }
 
-        function saveEstimation(isSilent = false) {
+    function saveEstimation(isSilent = false) {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
         if (!nopol) { 
             if (!isSilent) alert('Harap isi NOMOR POLISI sebelum menyimpan!'); 
@@ -1409,10 +1565,11 @@
             });
         });
         document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
+            const partNoInput = row.querySelector('.item-part-no');
             estimationData.part.push({
                 qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value,
-                discType: row.querySelector('.disc-type-select').value
+                name: row.querySelector('.item-name').value, partNo: partNoInput ? partNoInput.value : '',
+                disc: row.querySelector('.disc-input').value, discType: row.querySelector('.disc-type-select').value
             });
         });
 
@@ -1436,7 +1593,7 @@
         if (!isSilent) loadStorageList();
     }
 
-        function fetchFromCloudDatabase() {
+    function fetchFromCloudDatabase() {
         const nopol = document.getElementById('nopol').value.trim().toUpperCase();
         if (!nopol) { alert('Masukkan Nomor Polisi terlebih dahulu untuk melacak data cloud!'); return; }
 
@@ -1444,20 +1601,15 @@
             const cleanKey = nopol.replace(/[\.\#\$\[\]]/g, "-");
             const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
             
-            // Hentikan koneksi Nopol sebelumnya agar tidak menumpuk
             if (window.liveUnsubscribe) window.liveUnsubscribe();
 
             showToast(`📡 Memulai Live Sync (Online) untuk ${nopol}...`);
             
-            // Pantau Firebase secara terus-menerus
             window.liveUnsubscribe = window.dbOnValue(cloudRef, (snapshot) => {
                 const est = snapshot.val();
                 if (est) {
-                    // Cekatan cerdas: Jangan merefresh layar jika pengguna komputer SEDANG KLIK KOLOM.
-                    // Ini menghindari kursor hilang saat dua orang ngetik barengan.
                     const isTyping = document.activeElement.tagName;
                     if (isTyping === "INPUT" || isTyping === "SELECT") return; 
-
                     injectDataToFormElements(est);
                 }
             });
@@ -1490,6 +1642,8 @@
                 row.querySelector('.qty-input').value = p.qty;
                 row.querySelector('.price-input').value = p.price;
                 row.querySelector('.item-name').value = p.name;
+                const partNoInput = row.querySelector('.item-part-no');
+                if(partNoInput && p.partNo) partNoInput.value = p.partNo;
                 if(p.disc) row.querySelector('.disc-input').value = p.disc;
                 if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
             });
@@ -1570,10 +1724,9 @@
                     Object.keys(data).forEach(key => {
                         const est = data[key];
                         const li = document.createElement('li');
-li.className = 'storage-item';
-li.style.display = 'none'; // <-- TAMBAHKAN BARIS INI
-li.innerHTML = `
-
+                        li.className = 'storage-item';
+                        li.style.display = 'none';
+                        li.innerHTML = `
                             <span><strong>${est.nopol}</strong> (${est.date || 'Cloud Data'})</span>
                             <div style="display:flex; gap:6px;">
                                 <button class="btn btn-load" onclick="loadCloudEstimationDirect('${key}')">Buka</button>
@@ -1601,40 +1754,20 @@ li.innerHTML = `
         }
     }
 
-    function loadLocalEstimation(nopol) {
-        const savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
-        const est = savedEstimations.find(e => e.nopol === nopol);
-        if (!est) return;
-        injectDataToFormElements(est);
-        showToast(`📂 Sukses Memuat Data Lokal ${nopol}`);
-    }
-
-    function deleteEstimation(nopol) {
-        if(confirm(`Hapus berkas data lokal estimasi ${nopol}?`)) {
-            let savedEstimations = JSON.parse(localStorage.getItem('bengkel_estimations')) || [];
-            savedEstimations = savedEstimations.filter(e => e.nopol !== nopol);
-            localStorage.setItem('bengkel_estimations', JSON.stringify(savedEstimations));
-            loadStorageList();
-            showToast('🗑️ Berkas Estimasi Lokal Dihapus');
-        }
-    }
-
     function filterStorage() {
-    const filter = document.getElementById('search-input').value.trim().toUpperCase();
-    const items = document.querySelectorAll('#storage-list .storage-item');
-    
-    // Jika kolom pencarian kosong, sembunyikan semua daftar
-    if (filter === "") {
-        items.forEach(item => item.style.display = "none");
-        return;
-    }
+        const filter = document.getElementById('search-input').value.trim().toUpperCase();
+        const items = document.querySelectorAll('#storage-list .storage-item');
+        
+        if (filter === "") {
+            items.forEach(item => item.style.display = "none");
+            return;
+        }
 
-    // Jika ada pencarian, filter dan tampilkan yang cocok saja
-    items.forEach(item => {
-        const txt = item.querySelector('span').innerText;
-        item.style.display = txt.toUpperCase().includes(filter) ? "" : "none";
-    });
-}
+        items.forEach(item => {
+            const txt = item.querySelector('span').innerText;
+            item.style.display = txt.toUpperCase().includes(filter) ? "" : "none";
+        });
+    }
 
     function resetFormToNew() {
         if (confirm('Kosongkan form dan buat estimasi baru?')) {
@@ -1692,15 +1825,277 @@ li.innerHTML = `
         window.print();
     }
 
-        window.onload = function() {
+    // ==========================================
+    // LOGIKA CROPPER GAMBAR & TESSERACT OCR
+    // ==========================================
+    let ocrImageFile = null;
+    let currentOcrMode = null;
+    let isDrawing = false;
+    let startX = 0, startY = 0;
+    
+    let ocrRects = {
+        'partNo': { left: 0, top: 0, width: 0, height: 0, active: false },
+        'partName': { left: 0, top: 0, width: 0, height: 0, active: false },
+        'price': { left: 0, top: 0, width: 0, height: 0, active: false }
+    };
+
+    function handleImageUpload(event) {
+        let file = event.target.files[0];
+        if (file) openOcrModal(file);
+        event.target.value = ''; 
+    }
+
+    document.addEventListener('paste', function(e) {
+        let clipboardData = e.clipboardData || window.clipboardData;
+        for (let i = 0; i < clipboardData.items.length; i++) {
+            if (clipboardData.items[i].type.indexOf("image") !== -1) {
+                e.preventDefault();
+                let file = clipboardData.items[i].getAsFile();
+                openOcrModal(file);
+                return;
+            }
+        }
+        
+        let target = e.target;
+        if(target.classList.contains('price-input') || target.classList.contains('item-name') || target.classList.contains('item-part-no')) {
+            let text = clipboardData.getData('text');
+            if(text) {
+                e.preventDefault();
+                let lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+                let tbody = target.closest('tbody');
+                let rows = Array.from(tbody.querySelectorAll('tr:not(.row-total):not(.row-discount)'));
+                let startIdx = rows.indexOf(target.closest('tr'));
+                
+                lines.forEach((line, index) => {
+                    let rIdx = startIdx + index;
+                    if(rIdx >= rows.length) { addRow(tbody.closest('table').id); rows = Array.from(tbody.querySelectorAll('tr:not(.row-total):not(.row-discount)')); }
+                    let fillInput = rows[rIdx].querySelector('.' + target.className);
+                    
+                    if(fillInput) {
+                        if(target.classList.contains('price-input')) {
+                            let p = line.replace(/[^0-9]/g, '');
+                            if (p.length > 2) p = p.substring(0, p.length - 2);
+                            fillInput.value = p;
+                        }
+                        else fillInput.value = line.trim();
+                    }
+                });
+                calculateAll();
+            }
+        }
+    });
+
+    function openOcrModal(file) {
+        ocrImageFile = file;
+        const imgUrl = URL.createObjectURL(file);
+        document.getElementById('ocrImage').src = imgUrl;
+        document.getElementById('ocrModal').style.display = 'flex';
+        resetCropBoxes();
+        showToast("🖼️ Gambar berhasil dimuat. Silakan kotakkan areanya!", "info");
+    }
+
+    function closeOcrModal() {
+        document.getElementById('ocrModal').style.display = 'none';
+        currentOcrMode = null;
+    }
+
+    function setOcrMode(mode, btnElement) {
+        currentOcrMode = mode;
+        document.querySelectorAll('.ocr-tool-btn').forEach(b => b.classList.remove('active-mode'));
+        btnElement.classList.add('active-mode');
+    }
+
+    function resetCropBoxes() {
+        ['partNo', 'partName', 'price'].forEach(m => {
+            ocrRects[m].active = false;
+            document.getElementById(`box-${m}`).style.display = 'none';
+        });
+        currentOcrMode = null;
+        document.querySelectorAll('.ocr-tool-btn').forEach(b => b.classList.remove('active-mode'));
+    }
+
+    const cropContainer = document.getElementById('cropContainer');
+    
+    cropContainer.addEventListener('mousedown', (e) => {
+        if (!currentOcrMode) { alert("Pilih tombol mode area di atas terlebih dahulu!"); return; }
+        isDrawing = true;
+        const rect = cropContainer.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+
+        ocrRects[currentOcrMode].left = startX;
+        ocrRects[currentOcrMode].top = startY;
+        ocrRects[currentOcrMode].width = 0;
+        ocrRects[currentOcrMode].height = 0;
+        ocrRects[currentOcrMode].active = true;
+        renderBoxes();
+    });
+
+    cropContainer.addEventListener('mousemove', (e) => {
+        if (!isDrawing || !currentOcrMode) return;
+        const rect = cropContainer.getBoundingClientRect();
+        let currentX = e.clientX - rect.left;
+        let currentY = e.clientY - rect.top;
+
+        ocrRects[currentOcrMode].left = Math.min(startX, currentX);
+        ocrRects[currentOcrMode].top = Math.min(startY, currentY);
+        ocrRects[currentOcrMode].width = Math.abs(currentX - startX);
+        ocrRects[currentOcrMode].height = Math.abs(currentY - startY);
+        renderBoxes();
+    });
+
+    cropContainer.addEventListener('mouseup', () => { isDrawing = false; });
+    cropContainer.addEventListener('mouseleave', () => { isDrawing = false; });
+
+    function renderBoxes() {
+        ['partNo', 'partName', 'price'].forEach(m => {
+            let box = document.getElementById(`box-${m}`);
+            let d = ocrRects[m];
+            if (d.active && d.width > 5) {
+                box.style.display = 'block';
+                box.style.left = d.left + 'px';
+                box.style.top = d.top + 'px';
+                box.style.width = d.width + 'px';
+                box.style.height = d.height + 'px';
+            } else {
+                box.style.display = 'none';
+            }
+        });
+    }
+
+    function preprocessImageForOCR(imgElement, rectConfig) {
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = rectConfig.width * scale;
+        canvas.height = rectConfig.height * scale;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(imgElement, rectConfig.left, rectConfig.top, rectConfig.width, rectConfig.height, 0, 0, canvas.width, canvas.height);
+        
+        return canvas.toDataURL("image/png");
+    }
+
+    async function executeOcrExtraction() {
+        if (!ocrRects.partNo.active && !ocrRects.partName.active && !ocrRects.price.active) {
+            return alert("Gambarkan minimal 1 kotak area (Part No / Nama / Harga) terlebih dahulu!");
+        }
+
+        const img = document.getElementById('ocrImage');
+        const scaleX = img.naturalWidth / img.width;
+        const scaleY = img.naturalHeight / img.height;
+
+        showToast("⏳ Membaca data dengan AI... Mohon tunggu!", "loading");
+
+        let activeConfigs = [];
+        ['partNo', 'partName', 'price'].forEach(m => {
+            if (ocrRects[m].active) {
+                activeConfigs.push({
+                    mode: m,
+                    rect: {
+                        left: Math.max(0, ocrRects[m].left * scaleX),
+                        top: Math.max(0, ocrRects[m].top * scaleY),
+                        width: ocrRects[m].width * scaleX,
+                        height: ocrRects[m].height * scaleY
+                    }
+                });
+            }
+        });
+
+        let extractedData = { partNo: [], partName: [], price: [] };
+
+        try {
+            const worker = await Tesseract.createWorker('eng');
+            
+            for (let config of activeConfigs) {
+                let processedImageUrl = preprocessImageForOCR(img, config.rect);
+                
+                let params = {
+                    tessedit_pageseg_mode: '6',
+                };
+
+                if (config.mode === 'price') {
+                    params.tessedit_char_whitelist = '0123456789., ';
+                } else if (config.mode === 'partNo') {
+                    params.tessedit_char_whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-';
+                } else {
+                    params.tessedit_char_whitelist = '';
+                }
+                
+                await worker.setParameters(params);
+
+                const { data } = await worker.recognize(processedImageUrl);
+                let lines = data.text.split(/\r?\n/).filter(l => l.trim() !== '');
+
+                if (config.mode === 'price') {
+                    lines = lines.map(l => {
+                        let p = l.replace(/[^0-9]/g, '');
+                        if (p.length > 2) {
+                            p = p.substring(0, p.length - 2);
+                        }
+                        return p;
+                    });
+                } else if (config.mode === 'partNo') {
+                    lines = lines.map(l => l.replace(/[^A-Za-z0-9-]/g, '').trim());
+                } else {
+                    lines = lines.map(l => l.trim());
+                }
+                
+                extractedData[config.mode] = lines;
+            }
+            await worker.terminate();
+
+            let maxRows = Math.max(extractedData.partNo.length, extractedData.partName.length, extractedData.price.length);
+            
+            if (maxRows === 0) {
+                showToast("❌ Tidak ada teks yang ditemukan di area kotak tersebut.");
+                return;
+            }
+
+            closeOcrModal();
+            showToast(`✅ Selesai! Berhasil membaca ${maxRows} baris data ke tabel.`);
+
+            const tbody = document.querySelector('#table-part tbody');
+            let rows = Array.from(tbody.querySelectorAll('tr:not(.row-total):not(.row-discount)'));
+            let startIndex = rows.length; 
+            for(let i=0; i<rows.length; i++){
+                if(!rows[i].querySelector('.item-name').value) { startIndex = i; break; }
+            }
+
+            for (let i = 0; i < maxRows; i++) {
+                let rIdx = startIndex + i;
+                if (rIdx >= rows.length) { 
+                    addRow('table-part'); 
+                    rows = Array.from(tbody.querySelectorAll('tr:not(.row-total):not(.row-discount)')); 
+                }
+
+                let pInp = rows[rIdx].querySelector('.price-input');
+                let nInp = rows[rIdx].querySelector('.item-name');
+                let noInp = rows[rIdx].querySelector('.item-part-no');
+
+                if (pInp && extractedData.price[i]) pInp.value = extractedData.price[i];
+                if (nInp && extractedData.partName[i]) nInp.value = extractedData.partName[i];
+                if (noInp && extractedData.partNo[i]) noInp.value = extractedData.partNo[i];
+            }
+
+            calculateAll();
+
+        } catch (error) {
+            console.error(error);
+            showToast("❌ Gagal membaca gambar. Pastikan internet Anda lancar!");
+        }
+    }
+
+    window.onload = function() {
         loadStorageList();
         syncMasterDatabaseCloud(); 
         renderMasterTable();
         updateAllDropdowns();
         initDefaultLainTable(); 
-        startLiveSync(); // <-- TAMBAHAN: Memulai pantauan layar ala spreadsheet otomatis
+        startLiveSync();
     };
-
 </script>
 </body>
 </html>
