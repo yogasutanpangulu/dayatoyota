@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>&nbsp;</title>
+    <title>Estimasi Biaya Service - Daya Toyota</title>
     
     <!-- Library Tesseract.js (AI OCR) untuk Upload Gambar Kolom Part -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -38,6 +38,53 @@
             background-color: #f4f6f9;
             color: #000000;
         }
+
+        /* --- RULE HEADER COMPANY --- */
+        /* 1. Sembunyikan secara default di layar aplikasi */
+        .header-company-container {
+            display: none !important;
+        }
+
+        /* 2. Tampilkan HANYA saat dicetak / PDF */
+        @media print {
+            .header-company-container {
+                display: flex !important;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 8px;
+            }
+        }
+
+        /* Style Tombol Kembali ke Portal */
+        .top-bar-nav {
+            max-width: 950px;
+            margin: 0 auto 15px auto;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        .btn-back-portal {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #ffffff;
+            color: #495057;
+            border: 1px solid #ced4da;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+        .btn-back-portal:hover {
+            background-color: #e9ecef;
+            color: #212529;
+            border-color: #adb5bd;
+            transform: translateX(-3px);
+        }
+
         .container {
             width: 100%;
             max-width: 950px;
@@ -47,29 +94,91 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        .header-title {
-            text-align: center;
-            font-size: 16pt;
+
+        /* STYLES ISI HEADER BENGKEL */
+        .company-info {
+            font-size: 9.5pt;
+            line-height: 1.35;
+            color: #000;
+        }
+        .company-name {
+            font-size: 11pt;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
+        }
+        .company-sub {
+            font-size: 9pt;
+            margin-bottom: 2px;
+        }
+        .company-logo img {
+            max-height: 55px;
+            width: auto;
+            object-fit: contain;
+        }
+        .header-divider {
+            border: 0;
+            border-top: 2px solid #000;
+            margin: 10px 0 15px 0;
+        }
+        .document-title {
+            text-align: center;
+            font-size: 15pt;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
             text-transform: uppercase;
         }
-        
-        .nopol-container {
-            margin-bottom: 20px;
+
+        /* Form Details Kendaraan */
+        .info-grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 25px;
+        }
+        .info-row {
+            display: flex;
+            align-items: center;
+            font-size: 9.5pt;
+        }
+        .info-label {
+            width: 180px;
+            font-weight: bold;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .info-colon {
+            width: 15px;
+            font-weight: bold;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .info-input-wrapper {
+            flex: 1;
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        .nopol-container label {
-            font-weight: bold;
-            font-size: 10pt;
-        }
-        .nopol-input {
-            width: 200px !important;
+        .info-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px dotted #888 !important;
+            background: transparent;
+            font-size: 9.5pt;
             font-weight: bold;
             text-transform: uppercase;
+            padding: 2px 4px;
         }
+        .info-input:focus {
+            outline: none;
+            border-bottom: 1px solid #000 !important;
+        }
+        .info-input::placeholder {
+            font-weight: normal;
+            color: #888;
+            text-transform: none;
+        }
+        /* --------------------------------- */
 
         table {
             width: 100%;
@@ -228,14 +337,13 @@
         .btn-action { padding: 10px 20px; font-size: 10pt; border-radius: 6px; }
         .btn-save { background: #2196F3; color: white; border: none; }
         .btn-save:hover { background: #0b7dda; }
-        .btn-cloud-fetch { background: #7b1fa2; color: white; border: none; }
+        .btn-cloud-fetch { background: #7b1fa2; color: white; border: none; padding: 6px 14px; display: inline-flex; align-items: center; gap: 4px; }
         .btn-cloud-fetch:hover { background: #4a148c; }
         .btn-download { background: #4CAF50; color: white; border: none; }
         .btn-download:hover { background: #45a049; }
         .btn-reset { background: #ff9800; color: white; border: none; }
         .btn-reset:hover { background: #e68a00; }
 
-        /* Panel Penyimpanan & Panel Master Data */
         .storage-panel, .master-panel {
             margin-top: 25px;
             background: #f9f9f9;
@@ -272,7 +380,6 @@
         .btn-delete { color: #f44336; border-color: #f44336; background: transparent; }
         .btn-edit { color: #ff9800; border-color: #ff9800; background: transparent; }
 
-        /* Form Master Data & Import */
         .master-form {
             display: flex;
             gap: 10px;
@@ -334,7 +441,6 @@
             padding: 6px 10px !important;
         }
 
-        /* CSS UNTUK MODAL OCR CROPPER */
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items:center; justify-content:center; }
         .modal-content { background: #fff; padding: 20px; border-radius: 8px; max-width: 95%; max-height: 95vh; display:flex; flex-direction: column; width: 900px;}
         .modal-header { font-size: 14pt; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -356,7 +462,6 @@
 
         .modal-footer { margin-top: 15px; display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 15px;}
 
-        /* Toast Notification & Blok Kompilasi Kode */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -427,30 +532,24 @@
             transform: scale(1.1);
         }
 
-        .header-title-print {
-            display: none;
-        }
-
         @media print {
             .hide-on-print { display: none !important; }
             body { background: #fff; padding: 0; }
             .container { box-shadow: none; max-width: 100%; padding: 0; }
-            .action-panel, .storage-panel, .master-panel, .btn, .btn-remove, .btn-copy, .scroll-top-btn { display: none !important; }
+            .action-panel, .storage-panel, .master-panel, .btn, .btn-remove, .btn-copy, .scroll-top-btn, .top-bar-nav { display: none !important; }
             input[type="text"], input[type="number"], select { border-bottom: none !important; }
-            
-            .header-title-screen { display: none !important; }
-            .header-title-print { 
-                display: block !important; 
-                text-align: center;
-                font-size: 16pt;
-                font-weight: bold;
-                margin-bottom: 5px;
-                text-transform: uppercase;
-            }
+            .info-input { border-bottom: none !important; }
         }
     </style>
 </head>
 <body>
+
+    <!-- Tombol Kembali ke Portal Menu Utama -->
+    <div class="top-bar-nav hide-on-print">
+        <a href="index.html" class="btn-back-portal">
+            ⬅️ Kembali ke Menu Utama
+        </a>
+    </div>
 
 <div id="toast-container" class="toast-container"></div>
 <input type="file" id="imageUpload" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
@@ -459,7 +558,6 @@
 <div class="modal-overlay" id="editMasterModal">
     <div class="modal-content" style="width: 450px;">
         <div class="modal-header">Menu Edit Master Data</div>
-        
         <div style="display: flex; flex-direction: column; gap: 12px; margin: 10px 0;">
             <input type="hidden" id="edit-id">
             <div style="display: flex; align-items: center;">
@@ -472,18 +570,17 @@
             </div>
             <div style="display: flex; align-items: center;">
                 <label style="width: 130px; font-weight: bold; font-size: 9.5pt;">Nama Deskripsi</label>
-                <input type="text" id="edit-name" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; border-bottom: 1px solid #ccc;">
+                <input type="text" id="edit-name" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
             </div>
             <div style="display: flex; align-items: center;">
                 <label style="width: 130px; font-weight: bold; font-size: 9.5pt;">Code Part</label>
-                <input type="text" id="edit-code" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; border-bottom: 1px solid #ccc;">
+                <input type="text" id="edit-code" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
             </div>
             <div style="display: flex; align-items: center;">
                 <label style="width: 130px; font-weight: bold; font-size: 9.5pt;">Harga Master</label>
-                <input type="number" id="edit-price" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; border-bottom: 1px solid #ccc;">
+                <input type="number" id="edit-price" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
             </div>
         </div>
-
         <div class="modal-footer" style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
             <button class="btn-action" style="background: #9e9e9e; color: #fff; border:none; padding: 6px 15px; border-radius: 4px;" onclick="closeEditModal()">Batal</button>
             <button class="btn-action" style="background: #4caf50; color: #fff; border:none; padding: 6px 15px; border-radius: 4px; font-weight: bold;" onclick="saveEditedMasterData()">Simpan Perubahan</button>
@@ -491,22 +588,19 @@
     </div>
 </div>
 
-<!-- MODAL CROPPER UNTUK OCR GAMBAR -->
+<!-- MODAL CROPPER OCR -->
 <div class="modal-overlay" id="ocrModal">
     <div class="modal-content">
         <div class="modal-header">Pilih Area Kolom Untuk Diekstrak</div>
-        
         <div style="text-align: center; font-size: 9.5pt; color: #555; margin-bottom: 10px;">
             <b>Cara Penggunaan:</b> Klik tombol mode di bawah, lalu klik dan seret (drag) mouse pada gambar untuk menandai area kolom.
         </div>
-
         <div class="ocr-toolbar">
             <button class="ocr-tool-btn btn-mode-no" onclick="setOcrMode('partNo', this)">1. Kotakkan NO PART</button>
             <button class="ocr-tool-btn btn-mode-name" onclick="setOcrMode('partName', this)">2. Kotakkan NAMA PART</button>
             <button class="ocr-tool-btn btn-mode-price" onclick="setOcrMode('price', this)">3. Kotakkan HARGA</button>
             <button class="btn" style="background:#f44336; color:#fff; border:none; padding:10px;" onclick="resetCropBoxes()">🔄 Ulangi Kotak</button>
         </div>
-
         <div class="image-wrapper" id="imageWrapper">
             <div id="cropContainer">
                 <img id="ocrImage" src="">
@@ -515,7 +609,6 @@
                 <div id="box-price" class="crop-box"></div>
             </div>
         </div>
-
         <div class="modal-footer">
             <button class="btn-action" style="background: #9e9e9e; color: #fff; border:none;" onclick="closeOcrModal()">Batal</button>
             <button class="btn-action" style="background: #4caf50; color: #fff; border:none; font-weight: bold;" onclick="executeOcrExtraction()">Mulai Ekstrak Data!</button>
@@ -528,13 +621,58 @@
 <div class="container" id="main-content">
     <div id="top-anchor"></div>
     
-    <div class="header-title header-title-screen">Estimasi Biaya Service Bengkel</div>
-    <div class="header-title-print">Estimasi Biaya Service</div>
+    <!-- HEADER DEALER DAYA TOYOTA BARU -->
+<!-- BUNGKUS DENGAN TAG INI DI AWAL -->
+    <div class="header-company-container">
+        <div class="company-info">
+            <div class="company-name">PT DAYA ADICIPTA SANDIKA</div>
+            <div class="company-sub">Authorized Toyota Dealer</div>
+            <div>Cabang: Cakung</div>
+            <div>Jalan Raya Bekasi Km. 26,5 RT.007/RW.05, Kelurahan Ujung Menteng - Kecamatan Cakung, Jakarta Timur 13960, DKI Jakarta</div>
+            <div>P: +62 21 8896 8800; F: +62 21 8896 8900</div>
+            <div>www.daya-toyota.com</div>
+        </div>
+        <div class="company-logo">
+            <img src="LOGO DAYA.webp" alt="Daya Toyota Logo">
+        </div>
+    </div>
+<!-- BUNGKUS DENGAN TAG INI DI AKHIR -->
 
-    <div class="nopol-container">
-        <label for="nopol">NOMOR POLISI :</label>
-        <input type="text" id="nopol" class="nopol-input" placeholder="B 1234 ABC">
-        <button class="btn btn-cloud-fetch" onclick="fetchFromCloudDatabase()">🔍 Tarik Cloud</button>
+    <hr class="header-divider">
+
+    <div class="document-title">ESTIMASI BIAYA SERVICE</div>
+
+    <!-- FIELD INFORMASI KENDARAAN TERBARU -->
+    <div class="info-grid-container">
+        <div class="info-row">
+            <span class="info-label">NO. POLISI / RANGKA</span>
+            <span class="info-colon">:</span>
+            <div class="info-input-wrapper">
+                <input type="text" id="nopol" class="info-input" placeholder="B 1234 ABC / NO RANGKA...">
+                <button class="btn btn-cloud-fetch hide-on-print" onclick="fetchFromCloudDatabase()">🔍 Tarik Cloud</button>
+            </div>
+        </div>
+        <div class="info-row">
+            <span class="info-label">NAMA PELANGGAN</span>
+            <span class="info-colon">:</span>
+            <div class="info-input-wrapper">
+                <input type="text" id="nama-pelanggan" class="info-input" placeholder="NAMA PELANGGAN...">
+            </div>
+        </div>
+        <div class="info-row">
+            <span class="info-label">TYPE KENDARAAN</span>
+            <span class="info-colon">:</span>
+            <div class="info-input-wrapper">
+                <input type="text" id="type-kendaraan" class="info-input" placeholder="CONTOH: AVANZA / INNOVA / RUSH...">
+            </div>
+        </div>
+        <div class="info-row">
+            <span class="info-label">TGL PEMBUATAN</span>
+            <span class="info-colon">:</span>
+            <div class="info-input-wrapper">
+                <input type="text" id="tgl-pembuatan" class="info-input" placeholder="OTOMATIS TERISI SAAT DISIMPAN..." readonly>
+            </div>
+        </div>
     </div>
 
     <div class="table-title" id="section-tabel-utama">
@@ -690,7 +828,6 @@
                         <div class="currency-box">
                             <span style="font-weight: bold; color: #d32f2f;">Rp</span>
                             <input type="text" id="main-discount" class="price-input" placeholder="0" style="width:110px; font-weight: bold; color: #d32f2f;" readonly>
-                            <span style="font-size: 8.5pt; color: #666; font-weight: normal; margin-left: 5px;"></span>
                         </div>
                     </td>
                 </tr>
@@ -758,10 +895,6 @@
             </div>
         </div>
 
-        <div style="font-size: 8.5pt; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 6px; border-radius: 4px;">
-            💡 <strong>Petunjuk:</strong> Klik langsung pada baris tabel master JASA atau PART bertanda <strong>[Klik untuk Pilih]</strong> di bawah untuk memasukkan item otomatis! Baris hitam tebal berfungsi sebagai pembatas grup.
-        </div>
-
         <table class="master-table">
             <thead>
                 <tr>
@@ -792,14 +925,8 @@
         if (window.db && window.dbRef && window.dbSet) {
             const dataToSave = {};
             data.forEach((item, index) => { dataToSave[item.id || index] = item; });
-            
             const dbRef = window.dbRef(window.db, 'master_database_v2');
-            window.dbSet(dbRef, dataToSave)
-                .then(() => console.log("Cloud DB Updated"))
-                .catch(e => {
-                    console.error('Gagal sync DB ke cloud', e);
-                    showToast("⚠️ Gagal sinkronisasi Database ke Cloud.");
-                });
+            window.dbSet(dbRef, dataToSave).catch(e => console.error('Gagal sync DB ke cloud', e));
         }
     }
 
@@ -816,7 +943,6 @@
                 } else {
                     validData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
                 }
-                
                 masterDatabase = [...lockedLainItems, ...validData];
                 renderMasterTable();
                 updateAllDropdowns();
@@ -838,9 +964,7 @@
         if(type === "loading") toast.classList.add('toast-loading');
         toast.innerText = message;
         container.appendChild(toast);
-        
         setTimeout(() => toast.classList.add('show'), 50);
-        
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
@@ -860,72 +984,18 @@
         document.getElementById('top-anchor').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function syncLiveDraft() {
-        if (!window.db || !window.dbRef || !window.dbSet) return;
-        
-        const estimationData = {
-            nopol: document.getElementById('nopol').value.toUpperCase() || "",
-            jasa: [], lain: [], part: []
-        };
-
-        document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
-            estimationData.jasa.push({
-                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-name').value, disc: row.querySelector('.disc-input').value,
-                discType: row.querySelector('.disc-type-select').value
-            });
-        });
-        document.querySelectorAll('#table-lain tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
-            estimationData.lain.push({
-                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-select').value, disc: row.querySelector('.disc-input').value,
-                discType: row.querySelector('.disc-type-select').value
-            });
-        });
-        document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
-            const partNoInput = row.querySelector('.item-part-no');
-            estimationData.part.push({
-                qty: row.querySelector('.qty-input').value, price: row.querySelector('.price-input').value,
-                name: row.querySelector('.item-name').value, partNo: partNoInput ? partNoInput.value : '',
-                disc: row.querySelector('.disc-input').value, discType: row.querySelector('.disc-type-select').value
-            });
-        });
-
-        const draftRef = window.dbRef(window.db, 'estimasi_live_draft');
-        window.dbSet(draftRef, estimationData);
-    }
-
-    function startLiveSync() {
-        if (window.db && window.dbRef && window.dbOnValue) {
-            const draftRef = window.dbRef(window.db, 'estimasi_live_draft');
-            window.dbOnValue(draftRef, (snapshot) => {
-                const est = snapshot.val();
-                if (est) {
-                    const isTyping = document.activeElement.tagName;
-                    if (isTyping === "INPUT" || isTyping === "SELECT") return; 
-                    injectDataToFormElements(est);
-                }
-            });
-        }
-    }
-
     function calculateAll() {
-        let subtotalJasa = 0;
-        let discTotalJasa = 0;
-        let subtotalLain = 0;
-        let discTotalLain = 0;
-        let subtotalPart = 0;
-        let discTotalPart = 0;
+        let subtotalJasa = 0, discTotalJasa = 0;
+        let subtotalLain = 0, discTotalLain = 0;
+        let subtotalPart = 0, discTotalPart = 0;
 
         document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
             const grossTotal = qty * price;
-            
             const discValue = parseFloat(row.querySelector('.disc-input').value) || 0;
             const discType = row.querySelector('.disc-type-select').value;
             let rowDiscount = discType === 'Rp' ? discValue : (discValue / 100) * grossTotal;
-            
             const netTotal = Math.max(0, grossTotal - rowDiscount);
             row.querySelector('.row-total-val').innerText = netTotal.toLocaleString('id-ID');
             subtotalJasa += grossTotal;
@@ -938,11 +1008,9 @@
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
             const grossTotal = qty * price;
-            
             const discValue = parseFloat(row.querySelector('.disc-input').value) || 0;
             const discType = row.querySelector('.disc-type-select').value;
             let rowDiscount = discType === 'Rp' ? discValue : (discValue / 100) * grossTotal;
-            
             const netTotal = Math.max(0, grossTotal - rowDiscount);
             row.querySelector('.row-total-val').innerText = netTotal.toLocaleString('id-ID');
             subtotalLain += grossTotal;
@@ -951,7 +1019,6 @@
         
         const subtotalLainElem = document.getElementById('subtotal-lain');
         if (subtotalLainElem) subtotalLainElem.innerText = subtotalLain.toLocaleString('id-ID');
-        
         const discountTotalLainElem = document.getElementById('discount-total-lain');
         if (discountTotalLainElem) discountTotalLainElem.innerText = discTotalLain.toLocaleString('id-ID');
 
@@ -959,11 +1026,9 @@
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
             const grossTotal = qty * price;
-            
             const discValue = parseFloat(row.querySelector('.disc-input').value) || 0;
             const discType = row.querySelector('.disc-type-select').value;
             let rowDiscount = discType === 'Rp' ? discValue : (discValue / 100) * grossTotal;
-            
             const netTotal = Math.max(0, grossTotal - rowDiscount);
             row.querySelector('.row-total-val').innerText = netTotal.toLocaleString('id-ID');
             subtotalPart += grossTotal;
@@ -982,13 +1047,6 @@
         document.getElementById('final-total').innerText = finalTotal.toLocaleString('id-ID');
 
         compilePartCodes();
-
-        clearTimeout(window.autoSaveTimer);
-        window.autoSaveTimer = setTimeout(() => {
-            if (typeof syncLiveDraft === "function") {
-                syncLiveDraft(); 
-            }
-        }, 1500);
     }
 
     function copyValue(button) {
@@ -1008,8 +1066,6 @@
         if (finalTotalValue !== "0") {
             navigator.clipboard.writeText(finalTotalValue).then(() => {
                 showToast(`📋 Total Akhir Tersalin: "Rp ${finalTotalValue}"`);
-            }).catch(err => {
-                console.error('Gagal menyalin teks: ', err);
             });
         } else {
             showToast("⚠️ Nilai total masih kosong!");
@@ -1026,66 +1082,41 @@
         let inputTdHtml = '';
         
         if (type === 'jasa') {
-            inputTdHtml = `
-                <div class="input-with-copy">
-                    <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <input type="text" class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA di bawah..." oninput="calculateAll()">
-                </div>`;
+            inputTdHtml = `<div class="input-with-copy"><button class="btn-copy" onclick="copyValue(this)">📋</button><input type="text" class="item-name" data-type="jasa" placeholder="Pilih langsung dari Master Data JASA..." oninput="calculateAll()"></div>`;
         } else if (type === 'part') {
-            inputTdHtml = `
-                <div style="display: flex; flex-direction: column; gap: 2px; width: 100%;">
-                    <div class="input-with-copy">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <input type="text" class="item-name" data-type="part" placeholder="Nama Part..." oninput="calculateAll()" style="font-weight: bold;">
-                    </div>
-                    <input type="text" class="item-part-no" placeholder="Part No..." style="font-size: 8.5pt; color: #555; width: 100%; border: none; border-bottom: 1px dotted #ccc; background: transparent; padding: 2px;">
-                </div>`;
+            inputTdHtml = `<div style="display: flex; flex-direction: column; gap: 2px; width: 100%;"><div class="input-with-copy"><button class="btn-copy" onclick="copyValue(this)">📋</button><input type="text" class="item-name" data-type="part" placeholder="Nama Part..." oninput="calculateAll()" style="font-weight: bold;"></div><input type="text" class="item-part-no" placeholder="Part No..." style="font-size: 8.5pt; color: #555; width: 100%; border: none; border-bottom: 1px dotted #ccc; background: transparent; padding: 2px;"></div>`;
         } else {
-            inputTdHtml = `
-                <div class="input-with-copy">
-                    <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                    <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
-                </div>`;
+            inputTdHtml = `<div class="input-with-copy"><button class="btn-copy" onclick="copyValue(this)">📋</button><select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select></div>`;
         }
 
         newRow.innerHTML = `
             <td class="text-center"><input type="number" class="qty-input" value="1" oninput="calculateAll()"></td>
             <td>
                 <div class="currency-box">
-                    <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
-                    <div class="price-wrapper">
-                        <span>Rp</span>
-                        <input type="number" class="price-input" placeholder="0" oninput="calculateAll()">
-                    </div>
+                    <button class="btn-copy" onclick="copyValue(this)">📋</button>
+                    <div class="price-wrapper"><span>Rp</span><input type="number" class="price-input" placeholder="0" oninput="calculateAll()"></div>
                 </div>
             </td>
             <td>${inputTdHtml}</td>
             <td>
                 <div class="currency-box">
                     <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
-                    <select class="disc-type-select" onchange="calculateAll()">
-                        <option value="%">%</option>
-                        <option value="Rp">Rp</option>
-                    </select>
+                    <select class="disc-type-select" onchange="calculateAll()"><option value="%">%</option><option value="Rp">Rp</option></select>
                 </div>
             </td>
             <td><div class="currency-box"><span>Rp</span><span class="row-total-val">0</span></div></td>
             <td class="text-center"><button class="btn-remove" onclick="removeRow(this)">X</button></td>
         `;
         
-        if (totalRow) {
-            tbody.insertBefore(newRow, totalRow);
-        } else {
-            tbody.appendChild(newRow);
-        }
+        if (totalRow) tbody.insertBefore(newRow, totalRow);
+        else tbody.appendChild(newRow);
         
         if (type === 'lain') updateAllDropdowns();
         calculateAll();
     }
 
     function removeRow(button) {
-        const row = button.closest('tr');
-        row.remove();
+        button.closest('tr').remove();
         calculateAll();
     }
 
@@ -1099,16 +1130,12 @@
             const customName = prompt("Masukkan nama OPL manual:");
             if (customName) {
                 const newOpt = document.createElement('option');
-                newOpt.value = customName;
-                newOpt.text = customName;
-                newOpt.setAttribute('data-price', 0);
+                newOpt.value = customName; newOpt.text = customName; newOpt.setAttribute('data-price', 0);
                 selectElement.appendChild(newOpt);
                 selectElement.value = customName;
-                priceInput.value = '';
-                priceInput.focus();
+                priceInput.value = ''; priceInput.focus();
             } else {
-                selectElement.value = "";
-                priceInput.value = 0;
+                selectElement.value = ""; priceInput.value = 0;
             }
         } else {
             priceInput.value = price;
@@ -1126,8 +1153,7 @@
         let targetRow = null;
 
         for (let i = 0; i < rows.length; i++) {
-            const nameInput = rows[i].querySelector('.item-name');
-            if (nameInput && nameInput.value.trim() === '') {
+            if (rows[i].querySelector('.item-name').value.trim() === '') {
                 targetRow = rows[i];
                 break;
             }
@@ -1145,36 +1171,26 @@
         if (type === 'part') {
             const matchedItem = masterDatabase.find(item => item.name === name && item.type === 'part');
             const partNoInput = targetRow.querySelector('.item-part-no');
-            if (partNoInput && matchedItem && matchedItem.code) {
-                partNoInput.value = matchedItem.code;
-            }
+            if (partNoInput && matchedItem && matchedItem.code) partNoInput.value = matchedItem.code;
         }
-
-        targetRow.style.backgroundColor = "#e8f5e9";
-        setTimeout(() => targetRow.style.backgroundColor = "transparent", 800);
 
         showToast(`✅ ${type.toUpperCase()} Terpilih: ${name}`);
         calculateAll();
     }
 
     function updateAllDropdowns() {
-        const selects = document.querySelectorAll('.item-select');
-        selects.forEach(select => {
+        document.querySelectorAll('.item-select').forEach(select => {
             const currentType = select.getAttribute('data-type');
             const currentValue = select.value; 
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option><option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
             
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
-            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
-            
-            const filteredData = masterDatabase.filter(item => item.type === currentType);
-            filteredData.forEach(item => {
+            masterDatabase.filter(item => item.type === currentType).forEach(item => {
                 if (item.name.startsWith('>>>') && item.name.endsWith('<<<')) {
                     optionsHtml += `<option value="" disabled style="background:#000; color:#fff; font-weight:bold; text-align:center;">${item.name}</option>`;
                 } else {
                     optionsHtml += `<option value="${item.name}" data-price="${item.price}">${item.name}</option>`;
                 }
             });
-            
             select.innerHTML = optionsHtml;
             select.value = currentValue; 
         });
@@ -1182,11 +1198,7 @@
 
     function initDefaultLainTable() {
         const table = document.getElementById('table-lain');
-        let tbody = table.getElementsByTagName('tbody')[0];
-        if (!tbody) {
-            tbody = document.createElement('tbody');
-            table.appendChild(tbody);
-        }
+        let tbody = table.getElementsByTagName('tbody')[0] || table.appendChild(document.createElement('tbody'));
         tbody.innerHTML = '';
         
         lockedLainItems.forEach(item => {
@@ -1195,26 +1207,15 @@
                 <td class="text-center"><input type="number" class="qty-input" value="1" oninput="calculateAll()"></td>
                 <td>
                     <div class="currency-box">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
-                        <div class="price-wrapper">
-                            <span>Rp</span>
-                            <input type="number" class="price-input" value="${item.price}" oninput="calculateAll()">
-                        </div>
+                        <button class="btn-copy" onclick="copyValue(this)">📋</button>
+                        <div class="price-wrapper"><span>Rp</span><input type="number" class="price-input" value="${item.price}" oninput="calculateAll()"></div>
                     </div>
                 </td>
-                <td>
-                    <div class="input-with-copy">
-                        <button class="btn-copy" onclick="copyValue(this)" title="Salin tulisan">📋</button>
-                        <select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select>
-                    </div>
-                </td>
+                <td><div class="input-with-copy"><button class="btn-copy" onclick="copyValue(this)">📋</button><select class="item-select" data-type="opl" onchange="autoFillPrice(this)"></select></div></td>
                 <td>
                     <div class="currency-box">
                         <input type="number" class="disc-input" placeholder="0" value="0" oninput="calculateAll()">
-                        <select class="disc-type-select" onchange="calculateAll()">
-                            <option value="%">%</option>
-                            <option value="Rp">Rp</option>
-                        </select>
+                        <select class="disc-type-select" onchange="calculateAll()"><option value="%">%</option><option value="Rp">Rp</option></select>
                     </div>
                 </td>
                 <td><div class="currency-box"><span>Rp</span><span class="row-total-val">0</span></div></td>
@@ -1223,16 +1224,9 @@
             tbody.appendChild(tr);
             
             const selectEl = tr.querySelector('.item-select');
-            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option>';
-            optionsHtml += '<option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
-            
-            const defaultItems = masterDatabase.filter(d => d.type === 'opl');
-            defaultItems.forEach(d => {
-                if (d.name.startsWith('>>>') && d.name.endsWith('<<<')) {
-                    optionsHtml += `<option value="" disabled style="background:#000; color:#fff; font-weight:bold; text-align:center;">${d.name}</option>`;
-                } else {
-                    optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
-                }
+            let optionsHtml = '<option value="" data-price="0">-- Pilih Konten OPL --</option><option value="CUSTOM" data-price="0">[Tulis Kustom Sendiri / Manual]</option>';
+            masterDatabase.filter(d => d.type === 'opl').forEach(d => {
+                optionsHtml += `<option value="${d.name}" data-price="${d.price}">${d.name}</option>`;
             });
             selectEl.innerHTML = optionsHtml;
             selectEl.value = item.name;
@@ -1240,20 +1234,12 @@
 
         const totalTr = document.createElement('tr');
         totalTr.className = 'row-total';
-        totalTr.innerHTML = `
-            <td colspan="4" class="row-total-label">JUMLAH</td>
-            <td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td>
-            <td></td>
-        `;
+        totalTr.innerHTML = `<td colspan="4" class="row-total-label">JUMLAH</td><td class="row-total-value"><div class="currency-box"><span>Rp</span><span id="subtotal-lain">0</span></div></td><td></td>`;
         tbody.appendChild(totalTr);
 
         const discTr = document.createElement('tr');
         discTr.className = 'row-discount';
-        discTr.innerHTML = `
-            <td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td>
-            <td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td>
-            <td></td>
-        `;
+        discTr.innerHTML = `<td colspan="4" class="row-total-label" style="color: #d32f2f;">POTONGAN DISCOUNT (-)</td><td class="row-total-value row-discount-value"><div class="currency-box"><span>Rp</span><span id="discount-total-lain">0</span></div></td><td></td>`;
         tbody.appendChild(discTr);
 
         calculateAll();
@@ -1265,11 +1251,11 @@
         const price = parseFloat(document.getElementById('db-price').value) || 0;
         const code = document.getElementById('db-code').value.trim();
 
-        if (!name) { alert('Mohon isi Nama Deskripsi dengan benar!'); return; }
+        if (!name) { alert('Mohon isi Nama Deskripsi!'); return; }
 
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === type));
-        savedData.push({ id: Date.now(), type: type, name: name, price: price, code: code });
+        savedData.push({ id: Date.now(), type, name, price, code });
         
         localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
         saveMasterDBToCloud(savedData);
@@ -1282,31 +1268,26 @@
         renderMasterTable();
         updateAllDropdowns();
         initDefaultLainTable();
-        showToast("✅ Item Master Data Berhasil Ditambahkan!");
+        showToast("✅ Master Data Ditambahkan!");
     }
 
     function editMasterData(id, event) {
         if (event) event.stopPropagation();
-        if (String(id).startsWith('L0')) { alert('Item bawaan ini dikunci sistem dan tidak boleh diedit!'); return; }
+        if (String(id).startsWith('L0')) { alert('Item bawaan sistem dikunci!'); return; }
 
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         let currentItem = savedData.find(item => String(item.id) === String(id));
         if (!currentItem) return;
 
-        // Masukkan data lama ke dalam elemen form modal
         document.getElementById('edit-id').value = currentItem.id;
         document.getElementById('edit-category').value = currentItem.type;
         document.getElementById('edit-name').value = currentItem.name;
         document.getElementById('edit-code').value = currentItem.code || '';
         document.getElementById('edit-price').value = currentItem.price || 0;
-
-        // Munculkan modal edit
         document.getElementById('editMasterModal').style.display = 'flex';
     }
 
-    function closeEditModal() {
-        document.getElementById('editMasterModal').style.display = 'none';
-    }
+    function closeEditModal() { document.getElementById('editMasterModal').style.display = 'none'; }
 
     function saveEditedMasterData() {
         const id = document.getElementById('edit-id').value;
@@ -1315,57 +1296,44 @@
         const newCode = document.getElementById('edit-code').value.trim();
         const newPrice = parseFloat(document.getElementById('edit-price').value) || 0;
 
-        if (!newName) {
-            alert("Nama deskripsi tidak boleh kosong!");
-            return;
-        }
+        if (!newName) { alert("Nama tidak boleh kosong!"); return; }
 
         let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
         let itemIndex = savedData.findIndex(item => String(item.id) === String(id));
         
         if (itemIndex !== -1) {
-            savedData[itemIndex] = {
-                id: savedData[itemIndex].id,
-                type: newCategory,
-                name: newName,
-                price: newPrice,
-                code: newCode
-            };
-
+            savedData[itemIndex] = { id: savedData[itemIndex].id, type: newCategory, name: newName, price: newPrice, code: newCode };
             localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
             saveMasterDBToCloud(savedData);
-            
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
             initDefaultLainTable();
             closeEditModal();
-            showToast("✏️ Master Data Berhasil Diperbarui!");
+            showToast("✏️ Master Data Diperbarui!");
         }
     }
 
     function deleteMasterData(id, event) {
         if (event) event.stopPropagation();
-        if (String(id).startsWith('L0')) { alert('Item bawaan ini dikunci sistem dan tidak boleh dihapus!'); return; }
+        if (String(id).startsWith('L0')) { alert('Item bawaan dikunci!'); return; }
         
         if (confirm('Hapus item ini dari database?')) {
             let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
             savedData = savedData.filter(item => String(item.id) !== String(id));
             localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
             saveMasterDBToCloud(savedData);
-            
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
             initDefaultLainTable();
-            showToast("❌ Data Terhapus dari Katalog!");
+            showToast("❌ Data Terhapus!");
         }
     }
 
     function renderMasterTable() {
         const tbody = document.getElementById('master-db-rows');
         tbody.innerHTML = '';
-
         if(masterDatabase.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:15px;">Database kosong.</td></tr>`;
             return;
@@ -1382,7 +1350,6 @@
                 tr.innerHTML = `<td colspan="5">${item.name}</td>`;
             } else {
                 const codeDisplay = (item.type === 'part' && item.code) ? item.code : '-';
-                
                 if (item.type === 'part' || item.type === 'jasa') {
                     tr.className = "clickable-row";
                     tr.setAttribute('onclick', `handleMasterRowClick("${item.name}", ${item.price}, "${item.type}")`);
@@ -1391,12 +1358,7 @@
 
                 tr.innerHTML = `
                     <td><strong>${labelType}</strong></td>
-                    <td>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span>${item.name} ${isLocked ? '📌' : ''}</span>
-                            ${(item.type === 'part' || item.type === 'jasa') ? '<span class="badge-click">Klik untuk Pilih</span>' : ''}
-                        </div>
-                    </td>
+                    <td><div style="display:flex; justify-content:space-between; align-items:center;"><span>${item.name} ${isLocked ? '📌' : ''}</span>${(item.type === 'part' || item.type === 'jasa') ? '<span class="badge-click">Klik untuk Pilih</span>' : ''}</div></td>
                     <td><span style="font-family:monospace; font-weight:bold; color:#555;">${codeDisplay}</span></td>
                     <td>${item.price === 0 ? 'Rp 0' : 'Rp ' + item.price.toLocaleString('id-ID')}</td>
                     <td class="text-center" style="white-space: nowrap;">
@@ -1411,9 +1373,7 @@
 
     function filterMasterTable() {
         const filter = document.getElementById('db-search-input').value.toUpperCase();
-        const rows = document.querySelectorAll('#master-db-rows tr');
-        
-        rows.forEach(row => {
+        document.querySelectorAll('#master-db-rows tr').forEach(row => {
             if(row.classList.contains('group-header-row')) {
                 row.style.display = filter === "" ? "" : "none";
                 return;
@@ -1425,87 +1385,70 @@
     }
 
     function clearAllDatabase() {
-        if (confirm('Apakah Anda yakin ingin MENGHAPUS SEMUA DATA kustom tambahan Anda?')) {
+        if (confirm('Hapus semua data kustom tambahan?')) {
             localStorage.removeItem('bengkel_master_db');
             saveMasterDBToCloud([]);
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
             initDefaultLainTable();
-            showToast("Database kustom dibersihkan.");
+            showToast("Database dibersihkan.");
         }
     }
 
     function importCSVData() {
-        const fileInput = document.getElementById('csv-file-input');
-        const file = fileInput.files[0];
-        if (!file) { alert('Silakan pilih file CSV terlebih dahulu!'); return; }
-
+        const file = document.getElementById('csv-file-input').files[0];
+        if (!file) { alert('Pilih file CSV!'); return; }
         const reader = new FileReader();
         reader.onload = function(e) {
-            const text = e.target.result;
-            const lines = text.split(/\r?\n/); 
+            const lines = e.target.result.split(/\r?\n/);
             let successCount = 0;
-
             let separator = lines[0].includes(';') ? ';' : ',';
             const headers = lines[0].toLowerCase().split(separator);
-            
-            const catIdx = headers.findIndex(h => h.trim().includes('category') || h.trim().includes('kategori'));
-            const nameIdx = headers.findIndex(h => h.trim().includes('name') || h.trim().includes('nama') || h.trim().includes('deskripsi'));
-            const priceIdx = headers.findIndex(h => h.trim().includes('price') || h.trim().includes('harga'));
-            const codeIdx = headers.findIndex(h => h.trim().includes('code') || h.trim().includes('kode'));
+            const catIdx = headers.findIndex(h => h.includes('category') || h.includes('kategori'));
+            const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('nama') || h.includes('deskripsi'));
+            const priceIdx = headers.findIndex(h => h.includes('price') || h.includes('harga'));
+            const codeIdx = headers.findIndex(h => h.includes('code') || h.includes('kode'));
 
             if (catIdx === -1 || nameIdx === -1 || priceIdx === -1) {
-                alert('Format template salah! Gunakan kolom: Kategori, Nama, Harga, Kode');
-                return;
+                alert('Format kolom CSV salah!'); return;
             }
 
             let savedData = JSON.parse(localStorage.getItem('bengkel_master_db')) || [];
-
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
                 const columns = lines[i].split(separator);
-                if (columns.length <= Math.max(catIdx, nameIdx, priceIdx)) continue;
-
                 let category = columns[catIdx].trim().toLowerCase();
-                if (category === 'lain') category = 'opl'; 
-                
-                const name = columns[nameIdx].trim().replace(/^["']|["']$/g, '').trim(); 
+                if (category === 'lain') category = 'opl';
+                const name = columns[nameIdx].trim().replace(/^["']|["']$/g, '');
                 let price = parseFloat(columns[priceIdx].trim().replace(/[^0-9.-]/g, '')) || 0;
-                let code = codeIdx !== -1 && columns[codeIdx] ? columns[codeIdx].trim().replace(/^["']|["']$/g, '').trim() : "";
+                let code = codeIdx !== -1 && columns[codeIdx] ? columns[codeIdx].trim().replace(/^["']|["']$/g, '') : "";
 
-                const isSystemLocked = lockedLainItems.some(lock => lock.name.toLowerCase() === name.toLowerCase() && category === 'opl');
-
-                if (['jasa', 'part', 'opl'].includes(category) && name && !isSystemLocked) {
+                if (['jasa', 'part', 'opl'].includes(category) && name) {
                     savedData = savedData.filter(item => !(item.name.toLowerCase() === name.toLowerCase() && item.type === category));
-                    savedData.push({ id: Date.now() + i, type: category, name: name, price: price, code: code });
+                    savedData.push({ id: Date.now() + i, type: category, name, price, code });
                     successCount++;
                 }
             }
-
             localStorage.setItem('bengkel_master_db', JSON.stringify(savedData));
             saveMasterDBToCloud(savedData);
             syncMasterDatabase();
             renderMasterTable();
             updateAllDropdowns();
             initDefaultLainTable();
-            alert(`✅ Berhasil mengimpor ${successCount} item data dari file CSV!`);
+            alert(`✅ Berhasil mengimpor ${successCount} item dari CSV!`);
         };
         reader.readAsText(file);
     }
 
     function compilePartCodes() {
-        const table = document.getElementById('table-part');
-        const rows = table.querySelectorAll('tbody tr:not(.row-total):not(.row-discount)');
         let compiledResult = "";
-
-        rows.forEach(row => {
+        document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(row => {
             const nameInput = row.querySelector('.item-name');
             if (nameInput && nameInput.value.trim() !== "" && !nameInput.value.includes("Pilih langsung")) {
                 const nameText = nameInput.value.trim();
                 const matchedItem = masterDatabase.find(item => item.type === 'part' && item.name.toLowerCase() === nameText.toLowerCase());
-                
-                if (matchedItem && matchedItem.code && matchedItem.code.trim() !== "") {
+                if (matchedItem && matchedItem.code) {
                     compiledResult += matchedItem.code.trim() + " + ";
                 } else {
                     let smartCode = nameText.split(' ')[0];
@@ -1514,13 +1457,10 @@
                 }
             }
         });
-
         const finalTotalText = document.getElementById('final-total').innerText;
         const outputSpan = document.getElementById('compiled-part-codes');
-
         if (compiledResult !== "") {
-            let cleanParts = compiledResult.substring(0, compiledResult.length - 3);
-            outputSpan.innerText = cleanParts + "\n\nESTIMASI : Rp." + finalTotalText;
+            outputSpan.innerText = compiledResult.substring(0, compiledResult.length - 3) + "\n\nESTIMASI : Rp." + finalTotalText;
         } else {
             outputSpan.innerText = "- Belum ada part dipilih -";
         }
@@ -1528,13 +1468,8 @@
 
     function copyCompiledCodes() {
         const text = document.getElementById('compiled-part-codes').innerText;
-        if (text === "- Belum ada part dipilih -") {
-            showToast("⚠️ Tidak ada kode part yang bisa disalin!");
-            return;
-        }
-        navigator.clipboard.writeText(text).then(() => {
-            showToast("📋 Kode ringkasan part berhasil disalin!");
-        });
+        if (text === "- Belum ada part dipilih -") { showToast("⚠️ Kosong!"); return; }
+        navigator.clipboard.writeText(text).then(() => showToast("📋 Tersalin!"));
     }
 
     function saveEstimation(isSilent = false) {
@@ -1616,54 +1551,145 @@
         }
     }
 
-    function injectDataToFormElements(est) {
-        document.getElementById('nopol').value = est.nopol;
+    function loadStorageList() {
+        const list = document.getElementById('storage-list');
+        list.innerHTML = '<li style="padding:10px; color:#666;">Memuat riwayat dari Cloud...</li>';
+        
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const recordsRef = window.dbRef(window.db, 'estimasi_records_v2');
+            window.dbOnValue(recordsRef, (snapshot) => {
+                list.innerHTML = '';
+                const data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        const est = data[key];
+                        const li = document.createElement('li');
+                        li.className = 'storage-item';
+                        li.style.display = 'none';
+                        li.innerHTML = `
+                            <span><strong>${est.nopol}</strong> (${est.date || 'Cloud Data'})</span>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-load" onclick="loadCloudEstimationDirect('${key}')">Buka</button>
+                            </div>
+                        `;
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.innerHTML = '<li style="padding:10px; color:#999;">Belum ada estimasi di Cloud.</li>';
+                }
+            }, { onlyOnce: true });
+        }
+    }
 
+    function loadCloudEstimationDirect(cleanKey) {
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
+            window.dbOnValue(cloudRef, (snapshot) => {
+                const est = snapshot.val();
+                if (est) {
+                    // RESET FORM TERLEBIH DAHULU SEBELUM MEMUAT DATA
+                    document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+                    document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
+                    
+                    injectDataToFormElements(est);
+                    showToast(`📂 Berhasil memuat data ${est.nopol} dari Cloud!`);
+                }
+            }, { onlyOnce: true });
+        }
+    }
+
+    function filterStorage() {
+        const filter = document.getElementById('search-input').value.trim().toUpperCase();
+        const items = document.querySelectorAll('#storage-list .storage-item');
+        
+        if (filter === "") {
+            items.forEach(item => item.style.display = "none");
+            return;
+        }
+
+        items.forEach(item => {
+            const txt = item.querySelector('span').innerText;
+            item.style.display = txt.toUpperCase().includes(filter) ? "" : "none";
+        });
+    }
+
+    function startLiveSync() {
+        if (window.db && window.dbRef && window.dbOnValue) {
+            const draftRef = window.dbRef(window.db, 'estimasi_live_draft');
+            window.dbOnValue(draftRef, (snapshot) => {
+                const est = snapshot.val();
+                if (est) {
+                    const isTyping = document.activeElement.tagName;
+                    if (isTyping === "INPUT" || isTyping === "SELECT") return; 
+                    injectDataToFormElements(est);
+                }
+            });
+        }
+    }
+
+    function injectDataToFormElements(est) {
+        document.getElementById('nopol').value = est.nopol || '';
+
+        // 1. Bersihkan dan isi ulang tabel JASA
         const jasaBody = document.querySelector('#table-jasa tbody');
         jasaBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
-        if (est.jasa) {
+        if (est.jasa && est.jasa.length > 0) {
             est.jasa.forEach(j => {
                 addRow('table-jasa');
                 const row = jasaBody.querySelector('tr:nth-last-child(3)');
-                row.querySelector('.qty-input').value = j.qty;
-                row.querySelector('.price-input').value = j.price;
-                row.querySelector('.item-name').value = j.name;
-                if(j.disc) row.querySelector('.disc-input').value = j.disc;
-                if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
+                if (row) {
+                    row.querySelector('.qty-input').value = j.qty;
+                    row.querySelector('.price-input').value = j.price;
+                    row.querySelector('.item-name').value = j.name;
+                    if(j.disc) row.querySelector('.disc-input').value = j.disc;
+                    if(j.discType) row.querySelector('.disc-type-select').value = j.discType;
+                }
             });
+        } else {
+            addRow('table-jasa');
         }
 
+        // 2. Bersihkan dan isi ulang tabel PART / BAHAN
         const partBody = document.querySelector('#table-part tbody');
         partBody.querySelectorAll('tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
-        if (est.part) {
+        if (est.part && est.part.length > 0) {
             est.part.forEach(p => {
                 addRow('table-part');
                 const row = partBody.querySelector('tr:nth-last-child(3)');
-                row.querySelector('.qty-input').value = p.qty;
-                row.querySelector('.price-input').value = p.price;
-                row.querySelector('.item-name').value = p.name;
-                const partNoInput = row.querySelector('.item-part-no');
-                if(partNoInput && p.partNo) partNoInput.value = p.partNo;
-                if(p.disc) row.querySelector('.disc-input').value = p.disc;
-                if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
+                if (row) {
+                    row.querySelector('.qty-input').value = p.qty;
+                    row.querySelector('.price-input').value = p.price;
+                    row.querySelector('.item-name').value = p.name;
+                    const partNoInput = row.querySelector('.item-part-no');
+                    if(partNoInput && p.partNo) partNoInput.value = p.partNo;
+                    if(p.disc) row.querySelector('.disc-input').value = p.disc;
+                    if(p.discType) row.querySelector('.disc-type-select').value = p.discType;
+                }
             });
+        } else {
+            addRow('table-part');
         }
 
+        // 3. Bersihkan dan isi ulang tabel LAIN / OPL
         const tableLain = document.getElementById('table-lain');
         let lainBody = tableLain.getElementsByTagName('tbody')[0];
+        if (!lainBody) {
+            lainBody = document.createElement('tbody');
+            tableLain.appendChild(lainBody);
+        }
         lainBody.innerHTML = ''; 
 
         if (est.lain && est.lain.length > 0) {
             est.lain.forEach(l => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="text-center"><input type="number" class="qty-input" value="${l.qty}" oninput="calculateAll()"></td>
+                    <td class="text-center"><input type="number" class="qty-input" value="${l.qty || 1}" oninput="calculateAll()"></td>
                     <td>
                         <div class="currency-box">
                             <button class="btn-copy" onclick="copyValue(this)" title="Salin harga">📋</button>
                             <div class="price-wrapper">
                                 <span>Rp</span>
-                                <input type="number" class="price-input" value="${l.price}" oninput="calculateAll()">
+                                <input type="number" class="price-input" value="${l.price || 0}" oninput="calculateAll()">
                             </div>
                         </div>
                     </td>
@@ -1711,128 +1737,25 @@
         calculateAll();
     }
 
-    function loadStorageList() {
-        const list = document.getElementById('storage-list');
-        list.innerHTML = '<li style="padding:10px; color:#666;">Memuat riwayat dari Cloud...</li>';
-        
-        if (window.db && window.dbRef && window.dbOnValue) {
-            const recordsRef = window.dbRef(window.db, 'estimasi_records_v2');
-            window.dbOnValue(recordsRef, (snapshot) => {
-                list.innerHTML = '';
-                const data = snapshot.val();
-                if (data) {
-                    Object.keys(data).forEach(key => {
-                        const est = data[key];
-                        const li = document.createElement('li');
-                        li.className = 'storage-item';
-                        li.style.display = 'none';
-                        li.innerHTML = `
-                            <span><strong>${est.nopol}</strong> (${est.date || 'Cloud Data'})</span>
-                            <div style="display:flex; gap:6px;">
-                                <button class="btn btn-load" onclick="loadCloudEstimationDirect('${key}')">Buka</button>
-                            </div>
-                        `;
-                        list.appendChild(li);
-                    });
-                } else {
-                    list.innerHTML = '<li style="padding:10px; color:#999;">Belum ada estimasi di Cloud.</li>';
-                }
-            }, { onlyOnce: true });
-        }
-    }
-
-    function loadCloudEstimationDirect(cleanKey) {
-        if (window.db && window.dbRef && window.dbOnValue) {
-            const cloudRef = window.dbRef(window.db, 'estimasi_records_v2/' + cleanKey);
-            window.dbOnValue(cloudRef, (snapshot) => {
-                const est = snapshot.val();
-                if (est) {
-                    injectDataToFormElements(est);
-                    showToast(`📂 Berhasil memuat data ${est.nopol} dari Cloud!`);
-                }
-            }, { onlyOnce: true });
-        }
-    }
-
-    function filterStorage() {
-        const filter = document.getElementById('search-input').value.trim().toUpperCase();
-        const items = document.querySelectorAll('#storage-list .storage-item');
-        
-        if (filter === "") {
-            items.forEach(item => item.style.display = "none");
-            return;
-        }
-
-        items.forEach(item => {
-            const txt = item.querySelector('span').innerText;
-            item.style.display = txt.toUpperCase().includes(filter) ? "" : "none";
-        });
-    }
-
     function resetFormToNew() {
-        if (confirm('Kosongkan form dan buat estimasi baru?')) {
+        if (confirm('Kosongkan form dan buat baru?')) {
             document.getElementById('nopol').value = '';
+            document.getElementById('nama-pelanggan').value = '';
+            document.getElementById('type-kendaraan').value = '';
+            document.getElementById('tgl-pembuatan').value = '';
             document.querySelectorAll('#table-jasa tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
             document.querySelectorAll('#table-part tbody tr:not(.row-total):not(.row-discount)').forEach(r => r.remove());
             addRow('table-jasa');
             addRow('table-part');
             initDefaultLainTable();
-            showToast('✨ Form Kembali Bersih!');
+            showToast('✨ Form Bersih!');
         }
     }
 
-    function isTableEmpty(tableId, subtotalId) {
-        const subElem = document.getElementById(subtotalId);
-        if (!subElem) return true;
-        const subtotal = parseFloat(subElem.innerText.replace(/\./g, '').replace(/,/g, '')) || 0;
-        if (subtotal > 0) return false; 
-        
-        let hasName = false;
-        document.querySelectorAll(`#${tableId} tbody tr:not(.row-total):not(.row-discount)`).forEach(row => {
-            let val = '';
-            const input = row.querySelector('.item-name');
-            const select = row.querySelector('.item-select');
-            if (input) val = input.value;
-            if (select) val = select.value;
-            if (val && val.trim() !== '' && val !== 'CUSTOM') {
-                hasName = true;
-            }
-        });
-        return !hasName; 
-    }
+    function downloadPDF() { window.print(); }
 
-    function downloadPDF() {
-        const sections = [
-            { tId: 'table-jasa', subId: 'subtotal-jasa' },
-            { tId: 'table-lain', subId: 'subtotal-lain' },
-            { tId: 'table-part', subId: 'subtotal-part' }
-        ];
-
-        sections.forEach(sec => {
-            const table = document.getElementById(sec.tId);
-            if (table) {
-                const title = table.previousElementSibling;
-                if (isTableEmpty(sec.tId, sec.subId)) {
-                    table.classList.add('hide-on-print');
-                    if (title) title.classList.add('hide-on-print');
-                } else {
-                    table.classList.remove('hide-on-print');
-                    if (title) title.classList.remove('hide-on-print');
-                }
-            }
-        });
-
-        window.print();
-    }
-
-    // ==========================================
-    // LOGIKA CROPPER GAMBAR & TESSERACT OCR
-    // ==========================================
-    let ocrImageFile = null;
-    let currentOcrMode = null;
-    let isDrawing = false;
-    let startX = 0, startY = 0;
-    
+    // OCR Handlers
+    let ocrImageFile = null, currentOcrMode = null, isDrawing = false, startX = 0, startY = 0;
     let ocrRects = {
         'partNo': { left: 0, top: 0, width: 0, height: 0, active: false },
         'partName': { left: 0, top: 0, width: 0, height: 0, active: false },
@@ -1844,46 +1767,6 @@
         if (file) openOcrModal(file);
         event.target.value = ''; 
     }
-
-    document.addEventListener('paste', function(e) {
-        let clipboardData = e.clipboardData || window.clipboardData;
-        for (let i = 0; i < clipboardData.items.length; i++) {
-            if (clipboardData.items[i].type.indexOf("image") !== -1) {
-                e.preventDefault();
-                let file = clipboardData.items[i].getAsFile();
-                openOcrModal(file);
-                return;
-            }
-        }
-        
-        let target = e.target;
-        if(target.classList.contains('price-input') || target.classList.contains('item-name') || target.classList.contains('item-part-no')) {
-            let text = clipboardData.getData('text');
-            if(text) {
-                e.preventDefault();
-                let lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-                let tbody = target.closest('tbody');
-                let rows = Array.from(tbody.querySelectorAll('tr:not(.row-total):not(.row-discount)'));
-                let startIdx = rows.indexOf(target.closest('tr'));
-                
-                lines.forEach((line, index) => {
-                    let rIdx = startIdx + index;
-                    if(rIdx >= rows.length) { addRow(tbody.closest('table').id); rows = Array.from(tbody.querySelectorAll('tr:not(.row-total):not(.row-discount)')); }
-                    let fillInput = rows[rIdx].querySelector('.' + target.className);
-                    
-                    if(fillInput) {
-                        if(target.classList.contains('price-input')) {
-                            let p = line.replace(/[^0-9]/g, '');
-                            if (p.length > 2) p = p.substring(0, p.length - 2);
-                            fillInput.value = p;
-                        }
-                        else fillInput.value = line.trim();
-                    }
-                });
-                calculateAll();
-            }
-        }
-    });
 
     function openOcrModal(file) {
         ocrImageFile = file;
@@ -1908,57 +1791,61 @@
     function resetCropBoxes() {
         ['partNo', 'partName', 'price'].forEach(m => {
             ocrRects[m].active = false;
-            document.getElementById(`box-${m}`).style.display = 'none';
+            let box = document.getElementById(`box-${m}`);
+            if (box) box.style.display = 'none';
         });
         currentOcrMode = null;
         document.querySelectorAll('.ocr-tool-btn').forEach(b => b.classList.remove('active-mode'));
     }
 
     const cropContainer = document.getElementById('cropContainer');
-    
-    cropContainer.addEventListener('mousedown', (e) => {
-        if (!currentOcrMode) { alert("Pilih tombol mode area di atas terlebih dahulu!"); return; }
-        isDrawing = true;
-        const rect = cropContainer.getBoundingClientRect();
-        startX = e.clientX - rect.left;
-        startY = e.clientY - rect.top;
+    if (cropContainer) {
+        cropContainer.addEventListener('mousedown', (e) => {
+            if (!currentOcrMode) { alert("Pilih tombol mode area di atas terlebih dahulu!"); return; }
+            isDrawing = true;
+            const rect = cropContainer.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
 
-        ocrRects[currentOcrMode].left = startX;
-        ocrRects[currentOcrMode].top = startY;
-        ocrRects[currentOcrMode].width = 0;
-        ocrRects[currentOcrMode].height = 0;
-        ocrRects[currentOcrMode].active = true;
-        renderBoxes();
-    });
+            ocrRects[currentOcrMode].left = startX;
+            ocrRects[currentOcrMode].top = startY;
+            ocrRects[currentOcrMode].width = 0;
+            ocrRects[currentOcrMode].height = 0;
+            ocrRects[currentOcrMode].active = true;
+            renderBoxes();
+        });
 
-    cropContainer.addEventListener('mousemove', (e) => {
-        if (!isDrawing || !currentOcrMode) return;
-        const rect = cropContainer.getBoundingClientRect();
-        let currentX = e.clientX - rect.left;
-        let currentY = e.clientY - rect.top;
+        cropContainer.addEventListener('mousemove', (e) => {
+            if (!isDrawing || !currentOcrMode) return;
+            const rect = cropContainer.getBoundingClientRect();
+            let currentX = e.clientX - rect.left;
+            let currentY = e.clientY - rect.top;
 
-        ocrRects[currentOcrMode].left = Math.min(startX, currentX);
-        ocrRects[currentOcrMode].top = Math.min(startY, currentY);
-        ocrRects[currentOcrMode].width = Math.abs(currentX - startX);
-        ocrRects[currentOcrMode].height = Math.abs(currentY - startY);
-        renderBoxes();
-    });
+            ocrRects[currentOcrMode].left = Math.min(startX, currentX);
+            ocrRects[currentOcrMode].top = Math.min(startY, currentY);
+            ocrRects[currentOcrMode].width = Math.abs(currentX - startX);
+            ocrRects[currentOcrMode].height = Math.abs(currentY - startY);
+            renderBoxes();
+        });
 
-    cropContainer.addEventListener('mouseup', () => { isDrawing = false; });
-    cropContainer.addEventListener('mouseleave', () => { isDrawing = false; });
+        cropContainer.addEventListener('mouseup', () => { isDrawing = false; });
+        cropContainer.addEventListener('mouseleave', () => { isDrawing = false; });
+    }
 
     function renderBoxes() {
         ['partNo', 'partName', 'price'].forEach(m => {
             let box = document.getElementById(`box-${m}`);
             let d = ocrRects[m];
-            if (d.active && d.width > 5) {
-                box.style.display = 'block';
-                box.style.left = d.left + 'px';
-                box.style.top = d.top + 'px';
-                box.style.width = d.width + 'px';
-                box.style.height = d.height + 'px';
-            } else {
-                box.style.display = 'none';
+            if (box) {
+                if (d.active && d.width > 5) {
+                    box.style.display = 'block';
+                    box.style.left = d.left + 'px';
+                    box.style.top = d.top + 'px';
+                    box.style.width = d.width + 'px';
+                    box.style.height = d.height + 'px';
+                } else {
+                    box.style.display = 'none';
+                }
             }
         });
     }
@@ -2029,11 +1916,12 @@
                 const { data } = await worker.recognize(processedImageUrl);
                 let lines = data.text.split(/\r?\n/).filter(l => l.trim() !== '');
 
+                // LOGIKA UTAMA YANG DISAMAKAN: Mencegah angka harga berlebih/nambah
                 if (config.mode === 'price') {
                     lines = lines.map(l => {
                         let p = l.replace(/[^0-9]/g, '');
                         if (p.length > 2) {
-                            p = p.substring(0, p.length - 2);
+                            p = p.substring(0, p.length - 2); // Menyesuaikan penambahan digit desimal/nol dari OCR
                         }
                         return p;
                     });
@@ -2089,12 +1977,12 @@
     }
 
     window.onload = function() {
-        loadStorageList();
+        loadStorageList(); // Ditambahkan agar daftar pencarian lokal/cloud termuat
         syncMasterDatabaseCloud(); 
         renderMasterTable();
         updateAllDropdowns();
         initDefaultLainTable(); 
-        startLiveSync();
+        startLiveSync(); // Ditambahkan untuk sinkronisasi live
     };
 </script>
 </body>
